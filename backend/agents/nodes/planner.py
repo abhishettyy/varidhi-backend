@@ -627,6 +627,11 @@ def build_geofence_plan(
     constraints: Dict[str, Any],
 ) -> ExecutionPlan:
     """Constructs plan for GEOFENCE_QUERY."""
+    missing: List[str] = []
+    has_location = location and (location.get("latitude") is not None or location.get("name"))
+    if not has_location:
+        missing.append("location")
+
     steps: List[PlanStep] = [
         PlanStep(
             id="geofence",
@@ -683,8 +688,8 @@ def build_geofence_plan(
         intent=MarineIntent.GEOFENCE_QUERY.value,
         summary="Marine geofence and boundary restriction check",
         steps=steps,
-        requires_clarification=False,
-        missing=[],
+        requires_clarification=len(missing) > 0,
+        missing=missing,
         estimated_complexity="standard",
     )
 
@@ -696,8 +701,8 @@ def build_route_plan(
 ) -> ExecutionPlan:
     """Constructs plan for ROUTE_QUERY."""
     missing: List[str] = []
-    if not route or (not route.get("origin") and not route.get("destination")):
-        pass
+    if not route or (not route.get("origin") and not route.get("destination") and not route.get("waypoints")):
+        missing.append("route")
 
     steps: List[PlanStep] = [
         PlanStep(
@@ -850,6 +855,11 @@ def build_historical_analysis_plan(
     variables: List[str],
 ) -> ExecutionPlan:
     """Constructs plan dynamically for HISTORICAL_ANALYSIS based on requested variables."""
+    missing: List[str] = []
+    has_location = location and (location.get("latitude") is not None or location.get("name"))
+    if not has_location:
+        missing.append("location")
+
     data_steps: List[PlanStep] = []
 
     # Dynamic data step generation for requested variables
@@ -915,8 +925,8 @@ def build_historical_analysis_plan(
         intent=MarineIntent.HISTORICAL_ANALYSIS.value,
         summary=f"Historical time-series analysis for {', '.join(vars_to_plan)}",
         steps=all_steps,
-        requires_clarification=False,
-        missing=[],
+        requires_clarification=len(missing) > 0,
+        missing=missing,
         estimated_complexity="standard",
     )
 
@@ -953,6 +963,11 @@ async def planner_node(state: MarineState) -> Dict[str, Any]:
     """
     LangGraph node: Formulates the execution plan of required information and analytics.
     Converts QueryIntent into a structured, dependency-aware ExecutionPlan without executing tools.
+    
+    Architecture Note:
+    - `execution_plan` (ExecutionPlan) is the canonical source of truth for execution.
+    - `execution_steps` (List[PlanStep]) provides the canonical executable step list.
+    - `plan` (List[str]) is maintained strictly for legacy Phase 1 backward compatibility.
     """
     intent = state.get("intent") or MarineIntent.GENERAL_MARINE_QUERY.value
     location = state.get("location")

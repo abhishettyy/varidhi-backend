@@ -1,0 +1,178 @@
+{
+  "contract_version": "p5-normalized-v1",
+  "generator": "backend/p5/generate_mock_dataset.py",
+  "generator_version": "1.0.0",
+  "seed": 20260911,
+  "reference_time": "2026-09-11T00:00:00Z",
+  "model_run_time": "2026-09-10T18:00:00Z",
+  "region": {
+    "name": "Mangalore",
+    "latitude": 12.8681,
+    "longitude": 74.8427,
+    "harbor": "Mangalore Old Port",
+    "region": "Karnataka Coast",
+    "bbox": [
+      74.2,
+      12.5,
+      75.1,
+      13.4
+    ]
+  },
+  "synthetic": true,
+  "record_counts": {
+    "pfz": 32,
+    "sst": 84,
+    "chlorophyll": 84,
+    "restrictions": 12,
+    "wind": 96,
+    "wave": 96,
+    "swell": 96,
+    "tide": 96,
+    "currents": 96,
+    "historical": 48
+  },
+  "total_records": 740,
+  "historical_points": 4320,
+  "zones": [
+    {
+      "zone_id": "ZONE_A",
+      "latitude": 12.95,
+      "longitude": 74.8,
+      "golden_fixture": true,
+      "regulatory_status": "CLEAR"
+    },
+    {
+      "zone_id": "ZONE_B",
+      "latitude": 12.9,
+      "longitude": 74.95,
+      "golden_fixture": true,
+      "regulatory_status": "CLEAR"
+    },
+    {
+      "zone_id": "ZONE_C",
+      "latitude": 12.82,
+      "longitude": 75.05,
+      "golden_fixture": true,
+      "regulatory_status": "BLOCKED"
+    },
+    {
+      "zone_id": "ZONE_D",
+      "latitude": 13.05,
+      "longitude": 74.55,
+      "golden_fixture": false,
+      "regulatory_status": "CLEAR"
+    },
+    {
+      "zone_id": "ZONE_E",
+      "latitude": 13.2,
+      "longitude": 74.45,
+      "golden_fixture": false,
+      "regulatory_status": "CLEAR"
+    },
+    {
+      "zone_id": "ZONE_F",
+      "latitude": 12.7,
+      "longitude": 74.6,
+      "golden_fixture": false,
+      "regulatory_status": "CLEAR"
+    },
+    {
+      "zone_id": "ZONE_G",
+      "latitude": 12.6,
+      "longitude": 74.75,
+      "golden_fixture": false,
+      "regulatory_status": "CLEAR"
+    },
+    {
+      "zone_id": "ZONE_H",
+      "latitude": 13.35,
+      "longitude": 74.35,
+      "golden_fixture": false,
+      "regulatory_status": "CLEAR"
+    },
+    {
+      "zone_id": "ZONE_I",
+      "latitude": 12.85,
+      "longitude": 74.4,
+      "golden_fixture": false,
+      "regulatory_status": "CONDITIONAL"
+    },
+    {
+      "zone_id": "ZONE_J",
+      "latitude": 12.95,
+      "longitude": 74.62,
+      "golden_fixture": false,
+      "regulatory_status": "CLEAR"
+    },
+    {
+      "zone_id": "ZONE_K",
+      "latitude": 13.1,
+      "longitude": 74.25,
+      "golden_fixture": false,
+      "regulatory_status": "BLOCKED"
+    },
+    {
+      "zone_id": "ZONE_L",
+      "latitude": 12.55,
+      "longitude": 74.45,
+      "golden_fixture": false,
+      "regulatory_status": "CLEAR"
+    }
+  ],
+  "temporal_semantics": {
+    "latest_available": "satellite/advisory/regulatory observations: observation_time set, valid_time null",
+    "forecast": "model forecasts: valid_time set, observation_time null, metadata.model_run_time + lead_time_hours",
+    "historical": "daily series in data.series; observation_time = last point"
+  },
+  "missing_data": "measured fields that are unavailable are null, listed in metadata.missing_fields with metadata.missing_reason, and quality is 'degraded' (some fields) or 'missing' (primary value)",
+  "files": {
+    "chlorophyll.jsonl": {
+      "sha256": "ba9a1de38e899d96540ccdcd1880cb33d4bbcd956f68116073dd5717c8547080",
+      "lines": 84
+    },
+    "currents.jsonl": {
+      "sha256": "5933bd9a01cd0dbbf1f9881ca490afc3a1be181a042e0e61db7b938fea466408",
+      "lines": 96
+    },
+    "historical.jsonl": {
+      "sha256": "ac646afa6190105380b6a84fed86cffd29d7fc89cd0b7e39af5b8f00cf370ff2",
+      "lines": 48
+    },
+    "historical_points.csv": {
+      "sha256": "00f19ec71970870aa752c46c6b7597b136d98337a636616b200a55f95bcd04d1",
+      "lines": 4321
+    },
+    "p5_mock_records.csv": {
+      "sha256": "c30ed3bc1889e58c2916d06653f56a7a7e3c7785736b55f1297e26662ca2a34b",
+      "lines": 693
+    },
+    "pfz.jsonl": {
+      "sha256": "c1fdb6a7a15bc85df35101439096c4c12b30c0b7e330dee8f563bd400b838752",
+      "lines": 32
+    },
+    "restrictions.jsonl": {
+      "sha256": "4074ce37d16173fb337dcd800f80ca8f9530a72a88090fdc2442350c3223a1cb",
+      "lines": 12
+    },
+    "sst.jsonl": {
+      "sha256": "8a5d29ed3282b3f3680572555bc676d2e4826b2ca7fad33bc0a4c1aacb3e08a2",
+      "lines": 84
+    },
+    "swell.jsonl": {
+      "sha256": "e4ca223f3c2e774a4d33933cf6294c90e6e2108d592ca4353be622ccf00080c1",
+      "lines": 96
+    },
+    "tide.jsonl": {
+      "sha256": "3408ceab45af5f8b6e622a63a414db027745f710f75cabe52e1f27a938c5ebf5",
+      "lines": 96
+    },
+    "wave.jsonl": {
+      "sha256": "4eb71b399acad25e95529ac2feb486b89bb9ec1020c584337f4b57b3abe53cba",
+      "lines": 96
+    },
+    "wind.jsonl": {
+      "sha256": "b233329c612a04a37908b273f6ccb1e66c58e7273d1b34c17bb6e277028f1cc1",
+      "lines": 96
+    }
+  }
+}

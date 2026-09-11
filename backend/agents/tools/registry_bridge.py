@@ -10,6 +10,7 @@ from backend.agents.mocks.tool_registry import (
     mock_fetch_hazard_bulletins,
     mock_fetch_ocean_weather,
     mock_get_chlorophyll,
+    mock_get_historical_data,
     mock_get_pfz,
     mock_get_sst,
     mock_get_swell,
@@ -23,12 +24,14 @@ from backend.agents.tools.data_tools import (
     p4_fetch_ocean_weather,
     p4_get_chlorophyll,
     p4_get_currents,
+    p4_get_historical_data,
     p4_get_pfz,
     p4_get_sst,
     p4_get_swell,
     p4_get_tide,
     p4_get_wave,
     p4_get_wind,
+    use_p5_adapters,
 )
 
 P4_OPERATIONS_MAP: Dict[str, Callable] = {
@@ -64,6 +67,7 @@ MOCK_OPERATIONS_MAP: Dict[str, Callable] = {
     "check_geofence": mock_check_geofence,
     "fetch_ocean_weather": mock_fetch_ocean_weather,
     "fetch_hazard_bulletins": mock_fetch_hazard_bulletins,
+    "get_historical_data": mock_get_historical_data,
 }
 
 
@@ -90,4 +94,18 @@ def use_mock_tools() -> ToolRegistry:
     """Switch global ToolRegistry singleton to use mock tools."""
     registry = get_tool_registry()
     register_mock_tools(registry)
+    return registry
+
+
+def use_p5_tools(source: Any = None) -> ToolRegistry:
+    """Switch global ToolRegistry to P4 tools that read from the P5 data API.
+
+    P3 is untouched: the same operation names, the same ToolResult envelopes.
+    `source` defaults to backend.p5.source.get_p5_source() — the mock dataset,
+    or the P5 HTTP service when P5_API_URL is set.
+    """
+    use_p5_adapters(source)
+    registry = get_tool_registry()
+    register_p4_tools(registry)
+    registry.register("get_historical_data", p4_get_historical_data)
     return registry

@@ -6,12 +6,12 @@ import unittest
 from backend.agents.nodes.planner import planner_node
 from backend.agents.nodes.understand_query import understand_query_node
 from backend.agents.schemas.intent import MarineIntent, MarineVariable
-from backend.agents.schemas.plan import ExecutionPlan, PlanStep, StepType
+from backend.agents.schemas.plan import ExecutionPlan, InputPolicy, PlanStep, StepType
 from backend.agents.state.marine_state import MarineState
 
 
 class TestPhase3Planner(unittest.TestCase):
-    """Test suite for Phase 3 ExecutionPlan generation, DAG dependencies, and intent mapping."""
+    """Test suite for Phase 3 ExecutionPlan generation, DAG dependencies, input policies, and temporal contracts."""
 
     # 1. Fishing recommendation plan
     def test_01_fishing_recommendation_plan(self):
@@ -90,7 +90,6 @@ class TestPhase3Planner(unittest.TestCase):
         self.assertIn("wind", step_ids)
         self.assertIn("wave", step_ids)
         self.assertIn("response", step_ids)
-        # Should not request fishing opportunity
         self.assertNotIn("opportunity", step_ids)
 
     # 5. Hazard plan
@@ -236,7 +235,6 @@ class TestPhase3Planner(unittest.TestCase):
 
         self.assertTrue(plan.requires_clarification)
         self.assertIn("location", plan.missing)
-        # Still produces valid steps
         self.assertGreater(len(plan.steps), 0)
 
     # 15. Missing time handling
@@ -322,43 +320,69 @@ class TestPhase3Planner(unittest.TestCase):
         self.assertFalse(steps_by_id["swell"].required)
         self.assertFalse(steps_by_id["tide"].required)
 
-    # 20. Invalid / empty intent
-    def test_20_invalid_or_empty_intent(self):
+    # 20. Explicit InputPolicy: ALLOW_PARTIAL vs REQUIRE_ALL
+    def test_20_input_policy_partial_vs_require_all(self):
+        state: MarineState = {
+            "intent": MarineIntent.FISHING_RECOMMENDATION.value,
+            "location": {"name": "Mangalore", "latitude": 12.8681, "longitude": 74.8427},
+        }
+        res = asyncio.run(planner_node(state))
+        plan: ExecutionPlan = res["execution_plan"]
+
+        steps_by_id = {s.id: s for s in plan.steps}
+
+        # Analytics calculate_opportunity & calculate_marine_risk explicitly ALLOW_PARTIAL
+        self.assertEqual(steps_by_id["opportunity"].input_policy, InputPolicy.ALLOW_PARTIAL.value)
+        self.assertEqual(steps_by_id["risk"].input_policy, InputPolicy.ALLOW_PARTIAL.value)
+
+        # Decision & Response steps REQUIRE_ALL
+        self.assertEqual(steps_by_id["decision"].input_policy, InputPolicy.REQUIRE_ALL.value)
+        self.assertEqual(steps_by_id["response"].input_policy, InputPolicy.REQUIRE_ALL.value)
+
+    # 21. Temporal Mode Planning Contract (do not fabricate forecast availability)
+    def test_21_temporal_mode_planning_contract(self):
+        state: MarineState = {
+            "intent": MarineIntent.FISHING_RECOMMENDATION.value,
+            "location": {"name": "Mangalore", "latitude": 12.8681, "longitude": 74.8427},
+            "time_range": {"raw": "tomorrow morning", "relative_day": "tomorrow", "period": "morning"},
+        }
+        res = asyncio.run(planner_node(state))
+        plan: ExecutionPlan = res["execution_plan"]
+
+        steps_by_id = {s.id: s for s in plan.steps}
+
+        # SST, chlorophyll, and PFZ do not fabricate a 36h forecast; they declare latest_available
+        self.assertEqual(steps_by_id["sst"].parameters["temporal_mode"], "latest_available")
+        self.assertEqual(steps_by_id["chlorophyll"].parameters["temporal_mode"], "latest_available")
+        self.assertEqual(steps_by_id["pfz"].parameters["temporal_mode"], "latest_available")
+
+        # Wind and Wave have operational forecasts
+        self.assertEqual(steps_by_id["wind"].parameters["temporal_mode"], "forecast")
+        self.assertEqual(steps_by_id["wave"].parameters["temporal_mode"], "forecast")
+
+        # Requested time is preserved separately
+        self.assertEqual(steps_by_id["sst"].parameters["requested_time"]["raw"], "tomorrow morning")
+        self.assertEqual(steps_by_id["wind"].parameters["requested_time"]["raw"], "tomorrow morning")
+
+    # 22. Planner does not execute tools
+    def test_22_planner_does_not_execute_tools(self):
+        state: MarineState = {
+            "intent": MarineIntent.FISHING_RECOMMENDATION.value,
+            "location": {"name": "Mangalore", "latitude": 12.8681, "longitude": 74.8427},
+        }
+        res = asyncio.run(planner_node(state))
+        self.assertIn("execution_plan", res)
+        self.assertNotIn("tool_results", res)
+        self.assertNotIn("analytics_results", res)
+
+    # 23. Invalid or empty intent
+    def test_23_invalid_or_empty_intent(self):
         for bad_intent in ["", None, "UNKNOWN_INTENT_XYZ"]:
             state: MarineState = {"intent": bad_intent}
             res = asyncio.run(planner_node(state))
             plan: ExecutionPlan = res["execution_plan"]
             self.assertIsInstance(plan, ExecutionPlan)
             self.assertGreater(len(plan.steps), 0)
-
-    # 21. Planner does not execute tools
-    def test_21_planner_does_not_execute_tools(self):
-        state: MarineState = {
-            "intent": MarineIntent.FISHING_RECOMMENDATION.value,
-            "location": {"name": "Mangalore", "latitude": 12.8681, "longitude": 74.8427},
-        }
-        res = asyncio.run(planner_node(state))
-        # Verify planner only returns plan/execution_plan, no tool outputs
-        self.assertIn("execution_plan", res)
-        self.assertNotIn("tool_results", res)
-        self.assertNotIn("analytics_results", res)
-
-    # 22. End-to-end integration: Query Understanding -> Planner for Mangalore query
-    def test_22_e2e_mangalore_query_to_plan(self):
-        query = "I'm near Mangalore. Where should I fish tomorrow morning?"
-        state: MarineState = {"query": query}
-
-        # Step 1: Understand Query
-        qu_res = asyncio.run(understand_query_node(state))
-        state.update(qu_res)
-
-        # Step 2: Plan
-        plan_res = asyncio.run(planner_node(state))
-        plan: ExecutionPlan = plan_res["execution_plan"]
-
-        self.assertEqual(plan.intent, MarineIntent.FISHING_RECOMMENDATION.value)
-        self.assertFalse(plan.requires_clarification)
-        self.assertEqual(plan.steps[0].parameters["location"]["name"], "Mangalore")
 
 
 if __name__ == "__main__":

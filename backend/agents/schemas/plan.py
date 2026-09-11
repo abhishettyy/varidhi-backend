@@ -14,6 +14,13 @@ class StepType(str, Enum):
     RESPONSE = "RESPONSE"      # Final advisory and markdown synthesis
 
 
+class InputPolicy(str, Enum):
+    """Input dependency satisfaction policy for a plan step."""
+    REQUIRE_ALL = "REQUIRE_ALL"      # All declared dependencies must succeed
+    ALLOW_PARTIAL = "ALLOW_PARTIAL"  # Step can proceed with partial input if core data is present
+    OPTIONAL = "OPTIONAL"            # Dependencies are non-blocking/advisory only
+
+
 class ToolExecutionTarget(str, Enum):
     """Specifies which subsystem executes the step."""
     P4_EXTERNAL_TOOL = "p4_external_tool"          # Handled by P4 (APIs / weather / SST / Chlorophyll)
@@ -32,6 +39,10 @@ class PlanStep(BaseModel):
     depends_on: List[str] = Field(
         default_factory=list,
         description="List of step IDs that must complete before this step can execute."
+    )
+    input_policy: str = Field(
+        default=InputPolicy.REQUIRE_ALL.value,
+        description="Dependency satisfaction policy: REQUIRE_ALL, ALLOW_PARTIAL, OPTIONAL."
     )
     required: bool = Field(
         default=True,

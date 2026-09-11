@@ -1,0 +1,4 @@
+# Minimal dependencies for LangGraph Agent Orchestration (P3)
+langgraph>=0.2.0
+langchain-core>=0.3.0
+pydantic>=2.0.0

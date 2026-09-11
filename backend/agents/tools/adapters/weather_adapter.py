@@ -2,13 +2,14 @@
 
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
+from backend.agents.mocks.fixtures.mangalore_scenario import get_scenario_zones
 from backend.agents.tools.adapters.base import BaseDataAdapter
 
 
 class SyntheticMarineWeatherAdapter(BaseDataAdapter):
     """
     Synthetic realistic adapter for coastal marine meteorology, waves, and ocean dynamics.
-    Provides realistic physical oceanographic variables with honest 'synthetic' source tagging.
+    Provides realistic physical oceanographic variables aligned by candidate zone.
     """
 
     @property
@@ -25,24 +26,42 @@ class SyntheticMarineWeatherAdapter(BaseDataAdapter):
         requested_time: Optional[Dict[str, Any]] = None,
         temporal_mode: str = "forecast",
     ) -> Dict[str, Any]:
-        """Fetch surface wind observations or forecast."""
+        """Fetch surface wind observations or forecast aligned by candidate zone."""
         lat = location.get("latitude", 12.8681) or 12.8681
         lon = location.get("longitude", 74.8427) or 74.8427
         loc_name = location.get("name") or f"({lat:.2f}, {lon:.2f})"
 
-        # Generate realistic coastal wind for Karnataka/West Coast
         now_utc = datetime.now(timezone.utc).isoformat()
-
-        # Moderate sea breeze profile
-        speed_knots = 11.5
-        gust_knots = 15.0
-        direction_deg = 245.0  # WSW
-        direction_cardinal = "WSW"
-
         valid_time = (
             requested_time.get("iso_start") or requested_time.get("start") or now_utc
             if requested_time else now_utc
         )
+
+        scenario_zones = get_scenario_zones(location)
+
+        zone_wind = {}
+        zone_data = {}
+        for z in scenario_zones:
+            zid = z["zone_id"]
+            zone_wind[zid] = {
+                "latitude": z["latitude"],
+                "longitude": z["longitude"],
+                "speed_knots": z["wind_speed_knots"],
+                "gust_knots": z["wind_gust_knots"],
+                "direction_deg": z["wind_direction_deg"],
+                "direction_cardinal": z["wind_direction_cardinal"],
+            }
+            zone_data[zid] = {
+                "zone_id": zid,
+                "latitude": z["latitude"],
+                "longitude": z["longitude"],
+                "speed_knots": z["wind_speed_knots"],
+                "gust_knots": z["wind_gust_knots"],
+                "direction_deg": z["wind_direction_deg"],
+                "unit": "knots",
+            }
+
+        mean_speed = round(sum(z["wind_speed_knots"] for z in scenario_zones) / len(scenario_zones), 1)
 
         return {
             "status": "success",
@@ -54,16 +73,21 @@ class SyntheticMarineWeatherAdapter(BaseDataAdapter):
                 "location": loc_name,
                 "latitude": lat,
                 "longitude": lon,
-                "speed_knots": speed_knots,
-                "speed_ms": round(speed_knots * 0.514444, 2),
-                "gust_knots": gust_knots,
-                "direction_deg": direction_deg,
-                "direction_cardinal": direction_cardinal,
+                "speed_knots": mean_speed,
+                "speed_ms": round(mean_speed * 0.514444, 2),
+                "gust_knots": round(mean_speed * 1.3, 1),
+                "direction_deg": 245.0,
+                "direction_cardinal": "WSW",
                 "unit": "knots",
+                "zone_wind": zone_wind,
+                "zone_data": zone_data,
                 "temporal_mode": temporal_mode,
             },
             "quality": "synthetic_model",
             "metadata": {
+                "source_type": "synthetic",
+                "scenario": "mangalore_demo",
+                "fallback": False,
                 "model": "SYNTHETIC_COASTAL_ATMOSPHERIC_v1",
                 "resolution_km": 10.0,
             },
@@ -86,9 +110,30 @@ class SyntheticMarineWeatherAdapter(BaseDataAdapter):
             if requested_time else now_utc
         )
 
-        sig_wave_height_m = 1.35
-        wave_period_sec = 7.5
-        wave_direction_deg = 240.0
+        scenario_zones = get_scenario_zones(location)
+
+        zone_wave = {}
+        zone_data = {}
+        for z in scenario_zones:
+            zid = z["zone_id"]
+            zone_wave[zid] = {
+                "latitude": z["latitude"],
+                "longitude": z["longitude"],
+                "wave_height_m": z["wave_height_m"],
+                "wave_period_sec": z["wave_period_sec"],
+                "wave_direction_deg": z["wave_direction_deg"],
+            }
+            zone_data[zid] = {
+                "zone_id": zid,
+                "latitude": z["latitude"],
+                "longitude": z["longitude"],
+                "significant_wave_height_m": z["wave_height_m"],
+                "wave_period_sec": z["wave_period_sec"],
+                "wave_direction_deg": z["wave_direction_deg"],
+                "unit": "m",
+            }
+
+        mean_wave = round(sum(z["wave_height_m"] for z in scenario_zones) / len(scenario_zones), 2)
 
         return {
             "status": "success",
@@ -100,14 +145,19 @@ class SyntheticMarineWeatherAdapter(BaseDataAdapter):
                 "location": loc_name,
                 "latitude": lat,
                 "longitude": lon,
-                "significant_wave_height_m": sig_wave_height_m,
-                "wave_period_sec": wave_period_sec,
-                "wave_direction_deg": wave_direction_deg,
+                "significant_wave_height_m": mean_wave,
+                "wave_period_sec": 7.0,
+                "wave_direction_deg": 240.0,
                 "unit": "m",
+                "zone_wave": zone_wave,
+                "zone_data": zone_data,
                 "temporal_mode": temporal_mode,
             },
             "quality": "synthetic_model",
             "metadata": {
+                "source_type": "synthetic",
+                "scenario": "mangalore_demo",
+                "fallback": False,
                 "model": "SYNTHETIC_WAVEWATCH_COASTAL_v1",
                 "resolution_km": 5.0,
             },
@@ -128,6 +178,20 @@ class SyntheticMarineWeatherAdapter(BaseDataAdapter):
             if requested_time else now_utc
         )
 
+        scenario_zones = get_scenario_zones(location)
+        zone_swell = {}
+        for z in scenario_zones:
+            zid = z["zone_id"]
+            zone_swell[zid] = {
+                "latitude": z["latitude"],
+                "longitude": z["longitude"],
+                "swell_height_m": z["swell_height_m"],
+                "swell_period_sec": z["swell_period_sec"],
+                "swell_direction_deg": z["swell_direction_deg"],
+            }
+
+        mean_swell = round(sum(z["swell_height_m"] for z in scenario_zones) / len(scenario_zones), 2)
+
         return {
             "status": "success",
             "source": self.source_name,
@@ -137,13 +201,19 @@ class SyntheticMarineWeatherAdapter(BaseDataAdapter):
             "data": {
                 "latitude": lat,
                 "longitude": lon,
-                "swell_height_m": 0.9,
-                "swell_period_sec": 10.2,
+                "swell_height_m": mean_swell,
+                "swell_period_sec": 8.5,
                 "swell_direction_deg": 230.0,
                 "unit": "m",
+                "zone_swell": zone_swell,
             },
             "quality": "synthetic_model",
-            "metadata": {"model": "SYNTHETIC_SWELL_v1"},
+            "metadata": {
+                "source_type": "synthetic",
+                "scenario": "mangalore_demo",
+                "fallback": False,
+                "model": "SYNTHETIC_SWELL_v1",
+            },
         }
 
     def fetch_tide(
@@ -177,7 +247,12 @@ class SyntheticMarineWeatherAdapter(BaseDataAdapter):
                 "unit": "m",
             },
             "quality": "synthetic_harmonic",
-            "metadata": {"method": "HARMONIC_CONSTITUENTS_SIMULATION"},
+            "metadata": {
+                "source_type": "synthetic",
+                "scenario": "mangalore_demo",
+                "fallback": False,
+                "method": "HARMONIC_CONSTITUENTS_SIMULATION",
+            },
         }
 
     def fetch_currents(
@@ -209,5 +284,10 @@ class SyntheticMarineWeatherAdapter(BaseDataAdapter):
                 "unit": "knots",
             },
             "quality": "synthetic_hydrodynamic",
-            "metadata": {"model": "SYNTHETIC_COASTAL_CURRENTS_v1"},
+            "metadata": {
+                "source_type": "synthetic",
+                "scenario": "mangalore_demo",
+                "fallback": False,
+                "model": "SYNTHETIC_COASTAL_CURRENTS_v1",
+            },
         }

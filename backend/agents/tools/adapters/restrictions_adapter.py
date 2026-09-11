@@ -2,6 +2,7 @@
 
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+from backend.agents.mocks.fixtures.mangalore_scenario import get_scenario_zones
 from backend.agents.tools.adapters.base import BaseDataAdapter
 
 
@@ -31,31 +32,21 @@ class SyntheticRestrictionsAdapter(BaseDataAdapter):
         loc_name = location.get("name") or "Coastal Waters"
 
         now_utc = datetime.now(timezone.utc).isoformat()
+        scenario_zones = get_scenario_zones(location)
 
-        # Check candidate zones against realistic coastal boundaries
-        zone_restrictions: Dict[str, Dict[str, Any]] = {
-            "ZONE_A": {
-                "restricted": False,
-                "reason": None,
-                "status": "CLEAR",
-                "nearest_mpa_distance_nm": 42.0,
+        zone_restrictions: Dict[str, Dict[str, Any]] = {}
+        for z in scenario_zones:
+            zid = z["zone_id"]
+            zone_restrictions[zid] = {
+                "zone_id": zid,
+                "latitude": z["latitude"],
+                "longitude": z["longitude"],
+                "restricted": z["restricted"],
+                "status": z["regulatory_status"],
+                "reason": z["restriction_reason"],
+                "nearest_mpa_distance_nm": 42.0 if not z["restricted"] else 0.5,
                 "imbl_distance_nm": 185.0,
-            },
-            "ZONE_B": {
-                "restricted": False,
-                "reason": None,
-                "status": "CLEAR",
-                "nearest_mpa_distance_nm": 36.0,
-                "imbl_distance_nm": 192.0,
-            },
-            "ZONE_C": {
-                "restricted": False,
-                "reason": None,
-                "status": "CLEAR",
-                "nearest_mpa_distance_nm": 28.0,
-                "imbl_distance_nm": 204.0,
-            },
-        }
+            }
 
         # Known regional restricted areas (e.g. Netrani Island coral sanctuary ~60nm north of Mangalore)
         active_regulatory_areas: List[Dict[str, Any]] = [
@@ -89,13 +80,16 @@ class SyntheticRestrictionsAdapter(BaseDataAdapter):
                 "location": loc_name,
                 "latitude": lat,
                 "longitude": lon,
-                "restricted": False,
+                "restricted": any(z["restricted"] for z in scenario_zones),
                 "general_advisory": "Karnataka coastal waters clear for traditional & motorized craft within territorial baseline.",
                 "zone_restrictions": zone_restrictions,
                 "active_regulatory_areas": active_regulatory_areas,
             },
             "quality": "official_gazette_synthetic",
             "metadata": {
+                "source_type": "synthetic",
+                "scenario": "mangalore_demo",
+                "fallback": False,
                 "jurisdiction": "State Fisheries Dept & Coast Guard (Karnataka)",
                 "monsoon_ban_active": False,
             },

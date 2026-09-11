@@ -1,0 +1,51 @@
+"""Analytics package for P6 deterministic calculations, risk models, and scoring engines."""
+
+from backend.agents.analytics.opportunity import (
+    DEFAULT_CHLOROPHYLL_WEIGHT,
+    DEFAULT_DISTANCE_WEIGHT,
+    DEFAULT_PFZ_WEIGHT,
+    DEFAULT_SST_FRONT_WEIGHT,
+    MAX_CHLOROPHYLL_MG_M3,
+    MAX_OPERATIONAL_DISTANCE_NM,
+    MAX_SST_GRADIENT_C_PER_KM,
+    MAX_SST_GRADIENT_DELTA_C,
+    calculate_opportunity_from_p4_results,
+    calculate_opportunity_tool_entrypoint,
+    calculate_zone_opportunity,
+    derive_convergence_grade,
+    normalize_chlorophyll,
+    normalize_distance,
+    normalize_pfz_confidence,
+    normalize_sst_gradient,
+)
+from backend.agents.analytics.schemas import (
+    OpportunityAnalysisResult,
+    OpportunityComponents,
+    OpportunityWeights,
+    RawOpportunityFeatures,
+    ZoneOpportunityScore,
+)
+
+__all__ = [
+    "DEFAULT_PFZ_WEIGHT",
+    "DEFAULT_SST_FRONT_WEIGHT",
+    "DEFAULT_CHLOROPHYLL_WEIGHT",
+    "DEFAULT_DISTANCE_WEIGHT",
+    "MAX_SST_GRADIENT_DELTA_C",
+    "MAX_SST_GRADIENT_C_PER_KM",
+    "MAX_CHLOROPHYLL_MG_M3",
+    "MAX_OPERATIONAL_DISTANCE_NM",
+    "OpportunityWeights",
+    "RawOpportunityFeatures",
+    "OpportunityComponents",
+    "ZoneOpportunityScore",
+    "OpportunityAnalysisResult",
+    "normalize_pfz_confidence",
+    "normalize_sst_gradient",
+    "normalize_chlorophyll",
+    "normalize_distance",
+    "derive_convergence_grade",
+    "calculate_zone_opportunity",
+    "calculate_opportunity_from_p4_results",
+    "calculate_opportunity_tool_entrypoint",
+]

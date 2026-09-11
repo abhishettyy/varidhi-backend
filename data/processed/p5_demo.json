@@ -1,0 +1,590 @@
+[
+  {
+    "variable": "air_temperature_2m",
+    "value": 27.750634765625023,
+    "unit": "degC",
+    "latitude": 11.5,
+    "longitude": 73.0,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "ECMWF GRIB1",
+    "dataset": "ECMWF parameter table 128",
+    "quality": "valid",
+    "provenance": {
+      "provider": "ECMWF",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "raw_variable": "2t",
+      "original_unit": "K",
+      "details": null
+    }
+  },
+  {
+    "variable": "dewpoint_temperature_2m",
+    "value": 22.877587890625023,
+    "unit": "degC",
+    "latitude": 11.5,
+    "longitude": 73.0,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "ECMWF GRIB1",
+    "dataset": "ECMWF parameter table 128",
+    "quality": "valid",
+    "provenance": {
+      "provider": "ECMWF",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "raw_variable": "2d",
+      "original_unit": "K",
+      "details": null
+    }
+  },
+  {
+    "variable": "sea_surface_temperature",
+    "value": 28.763818359375023,
+    "unit": "degC",
+    "latitude": 11.5,
+    "longitude": 73.0,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "ECMWF GRIB1",
+    "dataset": "ECMWF parameter table 128",
+    "quality": "valid",
+    "provenance": {
+      "provider": "ECMWF",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "raw_variable": "sst",
+      "original_unit": "K",
+      "details": null
+    }
+  },
+  {
+    "variable": "total_precipitation",
+    "value": 0.0,
+    "unit": "m",
+    "latitude": 11.5,
+    "longitude": 73.0,
+    "observation_time": "2023-01-01T06:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "ECMWF GRIB1",
+    "dataset": "ECMWF parameter table 128",
+    "quality": "valid",
+    "provenance": {
+      "provider": "ECMWF",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "raw_variable": "tp",
+      "original_unit": "m",
+      "details": {
+        "accumulated": true,
+        "accumulation_start": "2023-01-01T11:00:00+00:00",
+        "accumulation_end": "2023-01-01T12:00:00+00:00"
+      }
+    }
+  },
+  {
+    "variable": "wind_speed",
+    "value": 5.910524183987763,
+    "unit": "m/s",
+    "latitude": 11.5,
+    "longitude": 73.0,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "derived from ECMWF GRIB1",
+    "dataset": "ECMWF parameter table 128",
+    "quality": "derived",
+    "provenance": {
+      "provider": "ECMWF",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "raw_variable": "10u,10v",
+      "original_unit": "m/s",
+      "details": {
+        "formula": "sqrt(wind_u**2 + wind_v**2)"
+      }
+    }
+  },
+  {
+    "variable": "wind_u",
+    "value": -0.0382537841796875,
+    "unit": "m/s",
+    "latitude": 11.5,
+    "longitude": 73.0,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "ECMWF GRIB1",
+    "dataset": "ECMWF parameter table 128",
+    "quality": "valid",
+    "provenance": {
+      "provider": "ECMWF",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "raw_variable": "10u",
+      "original_unit": "m/s",
+      "details": null
+    }
+  },
+  {
+    "variable": "wind_v",
+    "value": -5.910400390625,
+    "unit": "m/s",
+    "latitude": 11.5,
+    "longitude": 73.0,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "ECMWF GRIB1",
+    "dataset": "ECMWF parameter table 128",
+    "quality": "valid",
+    "provenance": {
+      "provider": "ECMWF",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "raw_variable": "10v",
+      "original_unit": "m/s",
+      "details": null
+    }
+  },
+  {
+    "variable": "mean_wave_direction",
+    "value": 160.72000122070312,
+    "unit": "degree",
+    "latitude": 11.5,
+    "longitude": 73.0,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "Copernicus Marine Service",
+    "dataset": "cmems_mod_glo_wav_anfc_0.083deg_PT3H-i_202411",
+    "quality": "valid",
+    "provenance": {
+      "provider": "Copernicus Marine Service / METEO-FRANCE",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\waves\\waves_mangalore_20230101.nc",
+      "raw_variable": "VMDR",
+      "original_unit": "degree",
+      "details": null
+    }
+  },
+  {
+    "variable": "peak_wave_period",
+    "value": 12.609999656677246,
+    "unit": "s",
+    "latitude": 11.5,
+    "longitude": 73.0,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "Copernicus Marine Service",
+    "dataset": "cmems_mod_glo_wav_anfc_0.083deg_PT3H-i_202411",
+    "quality": "valid",
+    "provenance": {
+      "provider": "Copernicus Marine Service / METEO-FRANCE",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\waves\\waves_mangalore_20230101.nc",
+      "raw_variable": "VTPK",
+      "original_unit": "s",
+      "details": null
+    }
+  },
+  {
+    "variable": "significant_wave_height",
+    "value": 0.9799999594688416,
+    "unit": "m",
+    "latitude": 11.5,
+    "longitude": 73.0,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "Copernicus Marine Service",
+    "dataset": "cmems_mod_glo_wav_anfc_0.083deg_PT3H-i_202411",
+    "quality": "valid",
+    "provenance": {
+      "provider": "Copernicus Marine Service / METEO-FRANCE",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\waves\\waves_mangalore_20230101.nc",
+      "raw_variable": "VHM0",
+      "original_unit": "m",
+      "details": null
+    }
+  },
+  {
+    "variable": "air_temperature_2m",
+    "value": 27.805322265625023,
+    "unit": "degC",
+    "latitude": 11.5,
+    "longitude": 73.25,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "ECMWF GRIB1",
+    "dataset": "ECMWF parameter table 128",
+    "quality": "valid",
+    "provenance": {
+      "provider": "ECMWF",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "raw_variable": "2t",
+      "original_unit": "K",
+      "details": null
+    }
+  },
+  {
+    "variable": "dewpoint_temperature_2m",
+    "value": 22.774072265625023,
+    "unit": "degC",
+    "latitude": 11.5,
+    "longitude": 73.25,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "ECMWF GRIB1",
+    "dataset": "ECMWF parameter table 128",
+    "quality": "valid",
+    "provenance": {
+      "provider": "ECMWF",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "raw_variable": "2d",
+      "original_unit": "K",
+      "details": null
+    }
+  },
+  {
+    "variable": "sea_surface_temperature",
+    "value": 28.792138671875023,
+    "unit": "degC",
+    "latitude": 11.5,
+    "longitude": 73.25,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "ECMWF GRIB1",
+    "dataset": "ECMWF parameter table 128",
+    "quality": "valid",
+    "provenance": {
+      "provider": "ECMWF",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "raw_variable": "sst",
+      "original_unit": "K",
+      "details": null
+    }
+  },
+  {
+    "variable": "total_precipitation",
+    "value": 0.0,
+    "unit": "m",
+    "latitude": 11.5,
+    "longitude": 73.25,
+    "observation_time": "2023-01-01T06:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "ECMWF GRIB1",
+    "dataset": "ECMWF parameter table 128",
+    "quality": "valid",
+    "provenance": {
+      "provider": "ECMWF",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "raw_variable": "tp",
+      "original_unit": "m",
+      "details": {
+        "accumulated": true,
+        "accumulation_start": "2023-01-01T11:00:00+00:00",
+        "accumulation_end": "2023-01-01T12:00:00+00:00"
+      }
+    }
+  },
+  {
+    "variable": "wind_speed",
+    "value": 5.563213573037505,
+    "unit": "m/s",
+    "latitude": 11.5,
+    "longitude": 73.25,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "derived from ECMWF GRIB1",
+    "dataset": "ECMWF parameter table 128",
+    "quality": "derived",
+    "provenance": {
+      "provider": "ECMWF",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "raw_variable": "10u,10v",
+      "original_unit": "m/s",
+      "details": {
+        "formula": "sqrt(wind_u**2 + wind_v**2)"
+      }
+    }
+  },
+  {
+    "variable": "wind_u",
+    "value": 0.2439727783203125,
+    "unit": "m/s",
+    "latitude": 11.5,
+    "longitude": 73.25,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "ECMWF GRIB1",
+    "dataset": "ECMWF parameter table 128",
+    "quality": "valid",
+    "provenance": {
+      "provider": "ECMWF",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "raw_variable": "10u",
+      "original_unit": "m/s",
+      "details": null
+    }
+  },
+  {
+    "variable": "wind_v",
+    "value": -5.557861328125,
+    "unit": "m/s",
+    "latitude": 11.5,
+    "longitude": 73.25,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "ECMWF GRIB1",
+    "dataset": "ECMWF parameter table 128",
+    "quality": "valid",
+    "provenance": {
+      "provider": "ECMWF",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "raw_variable": "10v",
+      "original_unit": "m/s",
+      "details": null
+    }
+  },
+  {
+    "variable": "mean_wave_direction",
+    "value": 174.97000122070312,
+    "unit": "degree",
+    "latitude": 11.5,
+    "longitude": 73.25,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "Copernicus Marine Service",
+    "dataset": "cmems_mod_glo_wav_anfc_0.083deg_PT3H-i_202411",
+    "quality": "valid",
+    "provenance": {
+      "provider": "Copernicus Marine Service / METEO-FRANCE",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\waves\\waves_mangalore_20230101.nc",
+      "raw_variable": "VMDR",
+      "original_unit": "degree",
+      "details": null
+    }
+  },
+  {
+    "variable": "peak_wave_period",
+    "value": 12.559999465942383,
+    "unit": "s",
+    "latitude": 11.5,
+    "longitude": 73.25,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "Copernicus Marine Service",
+    "dataset": "cmems_mod_glo_wav_anfc_0.083deg_PT3H-i_202411",
+    "quality": "valid",
+    "provenance": {
+      "provider": "Copernicus Marine Service / METEO-FRANCE",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\waves\\waves_mangalore_20230101.nc",
+      "raw_variable": "VTPK",
+      "original_unit": "s",
+      "details": null
+    }
+  },
+  {
+    "variable": "significant_wave_height",
+    "value": 0.949999988079071,
+    "unit": "m",
+    "latitude": 11.5,
+    "longitude": 73.25,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "Copernicus Marine Service",
+    "dataset": "cmems_mod_glo_wav_anfc_0.083deg_PT3H-i_202411",
+    "quality": "valid",
+    "provenance": {
+      "provider": "Copernicus Marine Service / METEO-FRANCE",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\waves\\waves_mangalore_20230101.nc",
+      "raw_variable": "VHM0",
+      "original_unit": "m",
+      "details": null
+    }
+  },
+  {
+    "variable": "air_temperature_2m",
+    "value": 27.801416015625023,
+    "unit": "degC",
+    "latitude": 11.5,
+    "longitude": 73.5,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "ECMWF GRIB1",
+    "dataset": "ECMWF parameter table 128",
+    "quality": "valid",
+    "provenance": {
+      "provider": "ECMWF",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "raw_variable": "2t",
+      "original_unit": "K",
+      "details": null
+    }
+  },
+  {
+    "variable": "dewpoint_temperature_2m",
+    "value": 22.740869140625023,
+    "unit": "degC",
+    "latitude": 11.5,
+    "longitude": 73.5,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "ECMWF GRIB1",
+    "dataset": "ECMWF parameter table 128",
+    "quality": "valid",
+    "provenance": {
+      "provider": "ECMWF",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "raw_variable": "2d",
+      "original_unit": "K",
+      "details": null
+    }
+  },
+  {
+    "variable": "sea_surface_temperature",
+    "value": 28.778466796875023,
+    "unit": "degC",
+    "latitude": 11.5,
+    "longitude": 73.5,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "ECMWF GRIB1",
+    "dataset": "ECMWF parameter table 128",
+    "quality": "valid",
+    "provenance": {
+      "provider": "ECMWF",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "raw_variable": "sst",
+      "original_unit": "K",
+      "details": null
+    }
+  },
+  {
+    "variable": "total_precipitation",
+    "value": 0.0,
+    "unit": "m",
+    "latitude": 11.5,
+    "longitude": 73.5,
+    "observation_time": "2023-01-01T06:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "ECMWF GRIB1",
+    "dataset": "ECMWF parameter table 128",
+    "quality": "valid",
+    "provenance": {
+      "provider": "ECMWF",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "raw_variable": "tp",
+      "original_unit": "m",
+      "details": {
+        "accumulated": true,
+        "accumulation_start": "2023-01-01T11:00:00+00:00",
+        "accumulation_end": "2023-01-01T12:00:00+00:00"
+      }
+    }
+  },
+  {
+    "variable": "wind_speed",
+    "value": 5.295548959309341,
+    "unit": "m/s",
+    "latitude": 11.5,
+    "longitude": 73.5,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "derived from ECMWF GRIB1",
+    "dataset": "ECMWF parameter table 128",
+    "quality": "derived",
+    "provenance": {
+      "provider": "ECMWF",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "raw_variable": "10u,10v",
+      "original_unit": "m/s",
+      "details": {
+        "formula": "sqrt(wind_u**2 + wind_v**2)"
+      }
+    }
+  },
+  {
+    "variable": "wind_u",
+    "value": 0.5506134033203125,
+    "unit": "m/s",
+    "latitude": 11.5,
+    "longitude": 73.5,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "ECMWF GRIB1",
+    "dataset": "ECMWF parameter table 128",
+    "quality": "valid",
+    "provenance": {
+      "provider": "ECMWF",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "raw_variable": "10u",
+      "original_unit": "m/s",
+      "details": null
+    }
+  },
+  {
+    "variable": "wind_v",
+    "value": -5.266845703125,
+    "unit": "m/s",
+    "latitude": 11.5,
+    "longitude": 73.5,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "ECMWF GRIB1",
+    "dataset": "ECMWF parameter table 128",
+    "quality": "valid",
+    "provenance": {
+      "provider": "ECMWF",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "raw_variable": "10v",
+      "original_unit": "m/s",
+      "details": null
+    }
+  },
+  {
+    "variable": "mean_wave_direction",
+    "value": 174.89999389648438,
+    "unit": "degree",
+    "latitude": 11.5,
+    "longitude": 73.5,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "Copernicus Marine Service",
+    "dataset": "cmems_mod_glo_wav_anfc_0.083deg_PT3H-i_202411",
+    "quality": "valid",
+    "provenance": {
+      "provider": "Copernicus Marine Service / METEO-FRANCE",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\waves\\waves_mangalore_20230101.nc",
+      "raw_variable": "VMDR",
+      "original_unit": "degree",
+      "details": null
+    }
+  },
+  {
+    "variable": "peak_wave_period",
+    "value": 12.460000038146973,
+    "unit": "s",
+    "latitude": 11.5,
+    "longitude": 73.5,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "Copernicus Marine Service",
+    "dataset": "cmems_mod_glo_wav_anfc_0.083deg_PT3H-i_202411",
+    "quality": "valid",
+    "provenance": {
+      "provider": "Copernicus Marine Service / METEO-FRANCE",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\waves\\waves_mangalore_20230101.nc",
+      "raw_variable": "VTPK",
+      "original_unit": "s",
+      "details": null
+    }
+  },
+  {
+    "variable": "significant_wave_height",
+    "value": 0.9099999666213989,
+    "unit": "m",
+    "latitude": 11.5,
+    "longitude": 73.5,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "source": "Copernicus Marine Service",
+    "dataset": "cmems_mod_glo_wav_anfc_0.083deg_PT3H-i_202411",
+    "quality": "valid",
+    "provenance": {
+      "provider": "Copernicus Marine Service / METEO-FRANCE",
+      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\waves\\waves_mangalore_20230101.nc",
+      "raw_variable": "VHM0",
+      "original_unit": "m",
+      "details": null
+    }
+  }
+]

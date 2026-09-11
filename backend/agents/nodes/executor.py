@@ -1,224 +1,212 @@
-"""Executor node: executes planned steps by invoking P4 tools and P6 marine analytics."""
+"""Generic dependency-aware executor node backed by mock tool registry and P4/P6 interface bridges."""
 
-from typing import Any, Dict, List
+import asyncio
+from typing import Any, Dict, List, Optional, Set
 
-from backend.agents.interfaces.p4_tools import get_p4_provider
-from backend.agents.interfaces.p6_analytics import get_p6_provider
-from backend.agents.schemas.plan import ToolExecutionTarget
+from backend.agents.mocks.tool_registry import get_tool_registry
+from backend.agents.schemas.plan import (
+    InputPolicy,
+    PlanStep,
+    StepType,
+    ToolExecutionTarget,
+)
 from backend.agents.state.marine_state import MarineState
+
+
+def detect_cycles(steps: List[PlanStep]) -> Optional[List[str]]:
+    """
+    Detects if there are any dependency cycles in the execution plan.
+    Returns the list of cyclic node IDs if a cycle is detected, else None.
+    """
+    adj: Dict[str, List[str]] = {s.id: list(s.depends_on) for s in steps}
+    visited: Dict[str, int] = {}  # 0: visiting, 1: visited
+    cycle_nodes: List[str] = []
+
+    def dfs(node: str, path: List[str]) -> bool:
+        visited[node] = 0
+        for neighbor in adj.get(node, []):
+            if neighbor not in adj:
+                continue
+            if visited.get(neighbor) == 0:
+                cycle_nodes.extend(path + [neighbor])
+                return True
+            if neighbor not in visited:
+                if dfs(neighbor, path + [neighbor]):
+                    return True
+        visited[node] = 1
+        return False
+
+    for step in steps:
+        if step.id not in visited:
+            if dfs(step.id, [step.id]):
+                return cycle_nodes
+    return None
+
+
+async def execute_single_step(
+    step: PlanStep,
+    step_outputs: Dict[str, Any],
+    registry: Any,
+) -> Dict[str, Any]:
+    """
+    Executes a single step given intermediate outputs of its declared dependencies,
+    enforcing InputPolicy (REQUIRE_ALL, ALLOW_PARTIAL, OPTIONAL).
+    """
+    op = step.operation or step.operation_name or "unknown_operation"
+    params = step.parameters or {}
+    depends_on = step.depends_on or []
+
+    # Gather available outputs of declared dependencies
+    dep_outputs = {dep_id: step_outputs[dep_id] for dep_id in depends_on if dep_id in step_outputs}
+
+    # Identify failed, blocked, or missing dependencies
+    failed_deps = [
+        dep_id for dep_id in depends_on
+        if dep_id not in step_outputs or step_outputs[dep_id].get("status") in ("failed", "blocked")
+    ]
+
+    policy = step.input_policy or InputPolicy.REQUIRE_ALL.value
+
+    # 1. Enforce REQUIRE_ALL
+    if failed_deps and policy == InputPolicy.REQUIRE_ALL.value:
+        return {
+            "status": "blocked",
+            "source": "mock",
+            "operation": op,
+            "error": f"Required dependency failed/missing: {failed_deps}",
+            "data": {},
+            "dependencies": depends_on,
+            "partial": False,
+        }
+
+    # 2. Enforce ALLOW_PARTIAL or OPTIONAL
+    is_partial = False
+    if failed_deps and policy in (InputPolicy.ALLOW_PARTIAL.value, InputPolicy.OPTIONAL.value):
+        is_partial = True
+
+    # Execute via generic tool registry
+    res = await registry.execute(
+        operation=op,
+        parameters=params,
+        dependencies=dep_outputs,
+    )
+
+    if is_partial:
+        res["partial"] = True
+        res["missing_dependencies"] = failed_deps
+
+    return res
 
 
 async def executor_node(state: MarineState) -> Dict[str, Any]:
     """
-    LangGraph node: Safely dispatches plan steps to P4 tool integrations, P6 analytics modules,
-    and internal synthesis steps.
-    Resolves dependency outputs dynamically via step.depends_on rather than hardcoded step IDs.
+    LangGraph node: Generic, dependency-aware DAG executor.
+    - Resolves execution order dynamically based on step.depends_on.
+    - Detects dependency cycles without getting stuck.
+    - Dispatches execution to the ToolRegistry.
+    - Explicitly passes dependency outputs to downstream steps.
+    - Enforces InputPolicy (REQUIRE_ALL, ALLOW_PARTIAL, OPTIONAL).
+    - Maintains state compatibility for downstream evidence assembly & response generation.
     """
     plan = state.get("execution_plan")
-    steps = state.get("execution_steps") or (plan.steps if plan else [])
-    errors = list(state.get("errors", []))
+    steps: List[PlanStep] = state.get("execution_steps") or (plan.steps if plan else [])
+    errors: List[str] = list(state.get("errors", []))
     tool_results: List[Dict[str, Any]] = list(state.get("tool_results", []))
     analytics_results: List[Dict[str, Any]] = list(state.get("analytics_results", []))
 
     if not steps:
-        return {"tool_results": tool_results, "analytics_results": analytics_results}
+        return {
+            "tool_results": tool_results,
+            "analytics_results": analytics_results,
+            "errors": errors,
+        }
 
-    p4_provider = get_p4_provider()
-    p6_provider = get_p6_provider()
+    # 1. Check for dependency cycles
+    cycle = detect_cycles(steps)
+    if cycle:
+        err_msg = f"Dependency cycle detected in execution plan: {' -> '.join(cycle)}"
+        errors.append(err_msg)
+        return {
+            "tool_results": tool_results,
+            "analytics_results": analytics_results,
+            "errors": errors,
+        }
 
-    # Dynamic step-by-step intermediate cache keyed by step ID
+    registry = get_tool_registry()
+
+    # Intermediate output cache keyed by step ID
     step_outputs: Dict[str, Any] = {}
+    completed_steps: Set[str] = set()
+    steps_map: Dict[str, PlanStep] = {s.id: s for s in steps}
 
-    for step in steps:
-        step_id_key = step.id or step.step_id or "step"
-        op = step.operation or step.operation_name or "unknown_op"
-        params = step.parameters or {}
-        depends_on = step.depends_on or []
+    # 2. Dynamic DAG scheduling loop
+    while len(completed_steps) < len(steps):
+        # Find all steps whose declared dependencies have been fulfilled
+        ready_steps = [
+            s for s in steps
+            if s.id not in completed_steps
+            and all(dep in step_outputs for dep in s.depends_on if dep in steps_map)
+        ]
 
-        # Resolve declared dependency outputs dynamically
-        dep_outputs = {dep_id: step_outputs.get(dep_id, {}) for dep_id in depends_on}
-
-        try:
-            if step.target == ToolExecutionTarget.P4_EXTERNAL_TOOL:
-                loc = params.get("location") or params.get("route") or {}
-
-                if op in ("fetch_ocean_weather", "get_wind", "get_wave", "get_swell", "get_tide"):
-                    res = await p4_provider.fetch_ocean_weather(
-                        location=loc,
-                        forecast_horizon_hours=params.get("forecast_horizon_hours", 24),
-                    )
-                elif op in ("fetch_sst_data", "get_sst"):
-                    res = await p4_provider.fetch_sst_data(
-                        location=loc,
-                        timeframe=params.get("requested_time") or params.get("timeframe"),
-                    )
-                elif op in ("fetch_chlorophyll_data", "get_chlorophyll"):
-                    res = await p4_provider.fetch_chlorophyll_data(
-                        location=loc,
-                        timeframe=params.get("requested_time") or params.get("timeframe"),
-                    )
-                elif op in ("fetch_hazard_bulletins", "check_restrictions", "check_geofence"):
-                    res = await p4_provider.fetch_hazard_bulletins(
-                        location=loc,
-                    )
-                elif op in ("get_pfz", "fetch_pfz"):
-                    res = {
-                        "status": "success",
-                        "source": "P4_MOCK_PFZ_SERVICE",
-                        "data": {
-                            "location": loc.get("name") if isinstance(loc, dict) else "Coastal Waters",
-                            "pfz_active": True,
-                        },
-                    }
-                elif op in ("get_vessel_position", "get_vessel_activity"):
-                    res = {
-                        "status": "success",
-                        "source": "P4_MOCK_AIS_SERVICE",
-                        "data": {
-                            "vessel": params.get("vessel", {}),
-                            "telemetry": {"status": "underway", "speed_knots": 10.2},
-                        },
-                    }
-                elif op == "get_historical_data":
-                    res = {
-                        "status": "success",
-                        "source": "P4_MOCK_HISTORICAL_ARCHIVE",
-                        "data": {
-                            "variable": params.get("variable", "SST"),
-                            "location": loc.get("name") if isinstance(loc, dict) else "Coastal Waters",
-                            "time_series_points": 30,
-                        },
-                    }
-                else:
-                    res = {
-                        "status": "success",
-                        "source": "P4_EXTERNAL_TOOL",
-                        "operation": op,
-                        "data": {"status": "completed", "parameters": params},
-                    }
-
-                step_outputs[step_id_key] = res
-                if step.id:
-                    step_outputs[step.id] = res
-                if step.step_id:
-                    step_outputs[step.step_id] = res
-
-                tool_results.append({
-                    "step_id": step_id_key,
+        if not ready_steps:
+            # Stalled due to unresolvable or missing dependencies
+            unresolved = [s for s in steps if s.id not in completed_steps]
+            for s in unresolved:
+                step_id_key = s.id or s.step_id or "step"
+                op = s.operation or s.operation_name or "unknown"
+                blocked_res = {
+                    "status": "blocked",
+                    "source": "mock",
                     "operation": op,
-                    "result": res,
-                })
-
-            elif step.target == ToolExecutionTarget.P6_MARINE_ANALYTICS:
-                if op in ("calculate_sea_state_risk", "calculate_marine_risk"):
-                    # Aggregate weather/wave data from declared dependencies
-                    weather_data = {}
-                    for dep_res in dep_outputs.values():
-                        if isinstance(dep_res, dict) and "data" in dep_res:
-                            if not weather_data:
-                                weather_data = {"status": "success", "source": "P6_AGGREGATED", "data": dict(dep_res["data"])}
-                            else:
-                                weather_data["data"].update(dep_res["data"])
-
-                    if not weather_data and "step_weather" in step_outputs:
-                        weather_data = step_outputs["step_weather"]
-
-                    vessel_type = (
-                        (params.get("vessel") or {}).get("type")
-                        if isinstance(params.get("vessel"), dict)
-                        else params.get("vessel_type", "small_motorized_boat")
-                    )
-                    res = await p6_provider.calculate_sea_state_risk(
-                        weather_data=weather_data or {"data": {}},
-                        vessel_type=vessel_type or "small_motorized_boat",
-                    )
-                elif op in ("compute_pfz_zones", "calculate_opportunity", "rank_zones", "calculate_distance"):
-                    sst_data = {}
-                    chlorophyll_data = {}
-                    for dep_id, dep_res in dep_outputs.items():
-                        d_lower = dep_id.lower()
-                        if "sst" in d_lower or "temp" in d_lower:
-                            sst_data = dep_res
-                        elif "chlorophyll" in d_lower or "chla" in d_lower or "bio" in d_lower:
-                            chlorophyll_data = dep_res
-                        elif not sst_data:
-                            sst_data = dep_res
-                        elif not chlorophyll_data:
-                            chlorophyll_data = dep_res
-
-                    if not sst_data and "step_sst" in step_outputs:
-                        sst_data = step_outputs["step_sst"]
-                    if not chlorophyll_data and "step_chlorophyll" in step_outputs:
-                        chlorophyll_data = step_outputs["step_chlorophyll"]
-
-                    res = await p6_provider.compute_pfz_zones(
-                        sst_data=sst_data or {},
-                        chlorophyll_data=chlorophyll_data or {},
-                        spatial_bounds=params.get("spatial_bounds") or params.get("location"),
-                    )
-                elif op == "detect_algal_bloom_risk":
-                    water_data = {}
-                    for dep_res in dep_outputs.values():
-                        if dep_res:
-                            water_data = dep_res
-                            break
-                    if not water_data and "step_chlorophyll" in step_outputs:
-                        water_data = step_outputs["step_chlorophyll"]
-
-                    res = await p6_provider.detect_algal_bloom_risk(
-                        water_quality_data=water_data,
-                        spatial_bounds=params.get("spatial_bounds"),
-                    )
-                elif op == "analyze_historical_trends":
-                    res = {
-                        "status": "success",
-                        "source": "P6_MOCK_TREND_ENGINE",
-                        "data": {
-                            "trend": "stable",
-                            "anomaly_detected": False,
-                            "summary": "Historical variables within seasonal baseline envelope.",
-                        },
-                    }
-                else:
-                    res = {
-                        "status": "success",
-                        "source": "P6_MARINE_ANALYTICS",
-                        "operation": op,
-                        "data": {"status": "computed", "dependencies": list(dep_outputs.keys())},
-                    }
-
-                step_outputs[step_id_key] = res
-                if step.id:
-                    step_outputs[step.id] = res
-                if step.step_id:
-                    step_outputs[step.step_id] = res
-
-                analytics_results.append({
-                    "step_id": step_id_key,
-                    "operation": op,
-                    "result": res,
-                })
-
-            else:
-                # Internal synthesis / DECISION / RESPONSE steps
-                res = {
-                    "status": "success",
-                    "source": "P3_INTERNAL_SYNTHESIS",
-                    "operation": op,
-                    "data": {
-                        "status": "completed",
-                        "inputs": list(dep_outputs.keys()),
-                    },
+                    "error": f"Step stalled due to unsatisfied upstream dependencies: {s.depends_on}",
+                    "data": {},
                 }
-                step_outputs[step_id_key] = res
-                if step.id:
-                    step_outputs[step.id] = res
-                if step.step_id:
-                    step_outputs[step.step_id] = res
+                step_outputs[step_id_key] = blocked_res
+                completed_steps.add(s.id)
+                errors.append(f"Execution error in {step_id_key}: blocked by upstream dependencies.")
+            break
 
-        except Exception as e:
-            err_msg = f"Execution error in {step_id_key} ({op}): {str(e)}"
-            errors.append(err_msg)
+        # Execute all currently ready steps concurrently
+        async def run_step(st: PlanStep):
+            res = await execute_single_step(st, step_outputs, registry)
+            return st, res
+
+        batch_results = await asyncio.gather(*(run_step(s) for s in ready_steps))
+
+        for step, res in batch_results:
+            step_id_key = step.id or step.step_id or "step"
+            op = step.operation or step.operation_name or "unknown"
+
+            # Cache under canonical id and aliases
+            step_outputs[step_id_key] = res
+            if step.id:
+                step_outputs[step.id] = res
+            if step.step_id:
+                step_outputs[step.step_id] = res
+
+            completed_steps.add(step.id)
+
+            if res.get("status") == "failed":
+                errors.append(f"Execution error in {step_id_key} ({op}): {res.get('error', 'unknown error')}")
+
+            # Structured result entry
+            result_entry = {
+                "step_id": step_id_key,
+                "operation": op,
+                "result": res,
+                "status": res.get("status", "success"),
+                "partial": res.get("partial", False),
+            }
+
+            # Map to tool_results / analytics_results for downstream evidence assembly
+            is_data_step = (
+                step.target == ToolExecutionTarget.P4_EXTERNAL_TOOL
+                or step.type == StepType.DATA.value
+            )
+            if is_data_step:
+                tool_results.append(result_entry)
+            else:
+                analytics_results.append(result_entry)
 
     return {
         "tool_results": tool_results,

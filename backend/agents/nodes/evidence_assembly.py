@@ -8,18 +8,18 @@ from backend.agents.schemas.evidence import (
     EvidenceItem,
     EvidenceType,
 )
-from backend.agents.state.agent_state import AgentState
+from backend.agents.state.marine_state import MarineState
 
 
-async def evidence_assembly_node(state: AgentState) -> Dict[str, Any]:
+async def evidence_assembly_node(state: MarineState) -> Dict[str, Any]:
     """
     LangGraph node: Normalizes and structures results from P4 tools and P6 analytics into a coherent EvidenceBundle.
     """
-    raw_query = state.get("raw_query", "")
+    raw_query = state.get("query", "") or state.get("raw_query", "")
     tool_results = state.get("tool_results", [])
     analytics_results = state.get("analytics_results", [])
-    spatiotemporal = state.get("spatiotemporal_context")
-    spatial_tag = spatiotemporal.spatial.place_name if spatiotemporal else None
+    location = state.get("location") or {}
+    spatial_tag = location.get("name") if isinstance(location, dict) else "Coastal Waters"
 
     evidence_items: List[EvidenceItem] = []
     missing_indicators: List[str] = []
@@ -143,4 +143,7 @@ async def evidence_assembly_node(state: AgentState) -> Dict[str, Any]:
         missing_indicators=missing_indicators,
     )
 
-    return {"evidence_bundle": bundle}
+    return {
+        "evidence_bundle": bundle,
+        "evidence": [item.model_dump() for item in evidence_items],
+    }

@@ -1,7 +1,7 @@
 """Response generation node: synthesizes evidence into persona-tailored marine advisories."""
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List
 
 from backend.agents.schemas.intent import MarineIntent
@@ -12,21 +12,24 @@ from backend.agents.schemas.response import (
     SafetySeverity,
     VisualPayload,
 )
-from backend.agents.state.agent_state import AgentState
+from backend.agents.state.marine_state import MarineState
 
 
-async def response_generation_node(state: AgentState) -> Dict[str, Any]:
+async def response_generation_node(state: MarineState) -> Dict[str, Any]:
     """
     LangGraph node: Formats the final natural language response and UI payloads.
     Adapts style dynamically based on whether the caller is a Fisherman, Researcher, or Maritime Operator.
     """
-    user_role = state.get("user_role", RoleType.GENERAL)
-    intent_res = state.get("intent_result")
-    spatiotemporal = state.get("spatiotemporal_context")
-    evidence_bundle = state.get("evidence_bundle")
+    user_type_raw = state.get("user_type", "general")
+    try:
+        user_role = RoleType(user_type_raw)
+    except ValueError:
+        user_role = RoleType.GENERAL
 
-    intent = intent_res.primary_intent if intent_res else MarineIntent.GENERAL_MARINE_QUERY
-    loc_name = spatiotemporal.spatial.place_name if spatiotemporal else "Coastal Waters"
+    intent_str = state.get("intent", MarineIntent.GENERAL_QUERY.value)
+    location = state.get("location") or {}
+    loc_name = location.get("name") if isinstance(location, dict) else "Coastal Waters"
+    evidence_bundle = state.get("evidence_bundle")
 
     # Extract metrics from evidence
     wave_height = 1.2
@@ -50,7 +53,7 @@ async def response_generation_node(state: AgentState) -> Dict[str, Any]:
             if "hotspots" in m:
                 hotspots = m["hotspots"]
             if "severity" in m:
-                sev_str = m["severity"]
+                sev_str = str(m["severity"]).lower()
                 if "danger" in sev_str or "red" in sev_str:
                     risk_severity = SafetySeverity.DANGER_RED
                 elif "warning" in sev_str or "orange" in sev_str:
@@ -92,22 +95,27 @@ async def response_generation_node(state: AgentState) -> Dict[str, Any]:
     key_recommendations: List[str] = []
     evidence_summaries: List[str] = [item.summary for item in (evidence_bundle.items if evidence_bundle else [])]
 
+    is_fishing_intent = intent_str in (
+        MarineIntent.FISHING_RECOMMENDATION.value,
+        "potential_fishing_zone",
+        "fishing_recommendation"
+    )
+
     if user_role == RoleType.FISHERMAN:
-        # P1 UI: Simple, bold, actionable
         lines = [
-            f"### 🌊 Marine Advisory for {loc_name}",
+            f"### Marine Advisory for {loc_name}",
             "",
             f"**Safety Status:** {safety_alert.title}",
             f"> {safety_alert.action_advice}",
             "",
-            "#### 📊 Sea Conditions:",
+            "#### Sea Conditions:",
             f"- **Waves:** {wave_height} meters ({'Calm' if wave_height < 1.5 else 'Rough'})",
             f"- **Wind:** {wind_speed} knots",
             f"- **Water Temp:** {sst_celsius}°C",
             "",
         ]
-        if intent == MarineIntent.POTENTIAL_FISHING_ZONE and hotspots:
-            lines.append("#### 🐟 Recommended Fishing Hotspots:")
+        if is_fishing_intent and hotspots:
+            lines.append("#### Recommended Fishing Hotspots:")
             for hs in hotspots:
                 lines.append(f"- **Zone {hs.get('zone_id', '1')}**: Bearing **{hs.get('bearing')}**, Distance **{hs.get('distance_nm')} NM** ({hs.get('target_depth_m')}m depth).")
                 lines.append(f"  *Expected Fish:* {', '.join(hs.get('likely_species', ['Pelagic species']))}")
@@ -118,10 +126,9 @@ async def response_generation_node(state: AgentState) -> Dict[str, Any]:
         markdown_content = "\n".join(lines)
 
     elif user_role == RoleType.RESEARCHER:
-        # P2 UI: Scientific breakdown, tables, physical oceanography metrics
         lines = [
             f"# Oceanographic Intelligence Report: {loc_name}",
-            f"**Analysis Generated:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')} | **Primary Intent:** {intent.value}",
+            f"**Analysis Generated:** {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')} | **Primary Intent:** {intent_str}",
             "",
             "## 1. Biophysical Ocean State",
             "| Parameter | Value | Reference / Status |",
@@ -135,7 +142,7 @@ async def response_generation_node(state: AgentState) -> Dict[str, Any]:
             f"- **Calculated Risk Index:** {safety_alert.severity.value}",
             f"- **Advisory Assessment:** {safety_alert.description}",
             "",
-            "## 3. Potential Fishing Zone (PFZ) Thermal-Biological Convergence",
+            "## 3. Potential Fishing Zone (PFZ) Convergence",
         ]
         if hotspots:
             for hs in hotspots:
@@ -148,7 +155,6 @@ async def response_generation_node(state: AgentState) -> Dict[str, Any]:
         markdown_content = "\n".join(lines)
 
     else:
-        # General Maritime / Default
         markdown_content = (
             f"### Marine Intelligence Advisory for {loc_name}\n\n"
             f"**Condition:** {safety_alert.title}\n\n"
@@ -157,7 +163,7 @@ async def response_generation_node(state: AgentState) -> Dict[str, Any]:
         )
         key_recommendations.append(safety_alert.action_advice)
 
-    # Build Visual Payload for Frontend (P1 / P2)
+    # Build Visual Payload for Frontend
     geojson_features = []
     for hs in hotspots:
         lat = hs.get("latitude", 9.93)
@@ -200,5 +206,9 @@ async def response_generation_node(state: AgentState) -> Dict[str, Any]:
 
     return {
         "final_response": response,
-        "is_terminal": True,
+        "response": response.model_dump(),
+        "decision": {
+            "safety_level": safety_alert.severity.value,
+            "action_advice": safety_alert.action_advice,
+        },
     }

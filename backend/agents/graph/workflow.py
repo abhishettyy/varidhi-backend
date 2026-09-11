@@ -1,55 +1,104 @@
-"""High-level workflow entrypoint and execution helpers for the Marine Agent."""
+"""High-level workflow entrypoints and execution helpers for the Marine Agent."""
 
 import asyncio
-from typing import Optional
+from typing import Any, Dict, Optional
 
-from backend.agents.graph.builder import build_marine_agent_graph
+from backend.agents.graph.builder import (
+    build_marine_agent_graph,
+    build_minimal_marine_graph,
+)
 from backend.agents.schemas.response import AgentResponse, RoleType
-from backend.agents.state.agent_state import AgentState
+from backend.agents.state.marine_state import MarineState
 
-# Lazy-loaded compiled graph singleton
-_COMPILED_GRAPH = None
+# Lazy-loaded singletons
+_COMPILED_FULL_GRAPH = None
+_COMPILED_MINIMAL_GRAPH = None
 
 
 def get_marine_agent_graph():
-    """Retrieve compiled LangGraph singleton."""
-    global _COMPILED_GRAPH
-    if _COMPILED_GRAPH is None:
-        _COMPILED_GRAPH = build_marine_agent_graph()
-    return _COMPILED_GRAPH
+    """Retrieve full compiled LangGraph singleton."""
+    global _COMPILED_FULL_GRAPH
+    if _COMPILED_FULL_GRAPH is None:
+        _COMPILED_FULL_GRAPH = build_marine_agent_graph()
+    return _COMPILED_FULL_GRAPH
+
+
+def get_minimal_marine_graph():
+    """Retrieve minimal compiled LangGraph singleton (understand_query -> planner -> END)."""
+    global _COMPILED_MINIMAL_GRAPH
+    if _COMPILED_MINIMAL_GRAPH is None:
+        _COMPILED_MINIMAL_GRAPH = build_minimal_marine_graph()
+    return _COMPILED_MINIMAL_GRAPH
+
+
+async def run_minimal_marine_graph_async(
+    query: str,
+    user_type: str = "fisherman"
+) -> MarineState:
+    """
+    Execute minimal workflow (understand_query -> planner) asynchronously.
+    Returns the resulting MarineState containing intent, structured location, time_range, and plan.
+    """
+    graph = get_minimal_marine_graph()
+
+    initial_state: MarineState = {
+        "query": query,
+        "user_type": user_type,
+        "tool_results": [],
+        "analytics_results": [],
+        "errors": [],
+    }
+
+    final_state = await graph.ainvoke(initial_state)
+    return final_state
+
+
+def run_minimal_marine_graph(
+    query: str,
+    user_type: str = "fisherman"
+) -> MarineState:
+    """
+    Synchronous wrapper for minimal workflow execution.
+    """
+    return asyncio.run(run_minimal_marine_graph_async(query, user_type=user_type))
 
 
 async def run_marine_agent_async(
     query: str,
     role: RoleType = RoleType.GENERAL,
     session_id: Optional[str] = None
-) -> AgentResponse:
+) -> Optional[AgentResponse]:
     """
-    Execute the marine intelligence agent graph asynchronously for a given query.
+    Execute full marine intelligence agent graph asynchronously for a given query.
     """
     graph = get_marine_agent_graph()
 
-    initial_state: AgentState = {
-        "raw_query": query,
-        "user_role": role,
-        "session_id": session_id,
+    user_type = role.value if hasattr(role, "value") else str(role)
+    initial_state: MarineState = {
+        "query": query,
+        "user_type": user_type,
         "errors": [],
-        "fallback_mode": False,
-        "is_terminal": False,
         "tool_results": [],
         "analytics_results": [],
     }
 
     final_state = await graph.ainvoke(initial_state)
-    return final_state.get("final_response")
+    resp = final_state.get("final_response")
+    if resp is None and final_state.get("response"):
+        resp_data = final_state.get("response")
+        if isinstance(resp_data, dict):
+            resp = AgentResponse(**resp_data)
+        elif isinstance(resp_data, AgentResponse):
+            resp = resp_data
+    return resp
 
 
 def run_marine_agent(
     query: str,
     role: RoleType = RoleType.GENERAL,
     session_id: Optional[str] = None
-) -> AgentResponse:
+) -> Optional[AgentResponse]:
     """
-    Synchronous wrapper to execute the marine intelligence agent graph.
+    Synchronous wrapper for full marine agent workflow.
     """
     return asyncio.run(run_marine_agent_async(query, role=role, session_id=session_id))

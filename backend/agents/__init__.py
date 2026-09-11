@@ -4,18 +4,32 @@ This module contains the LangGraph orchestration engine, intent classification,
 spatio-temporal extraction, planning, evidence assembly, and response generation.
 """
 
-from .graph.builder import build_marine_agent_graph
+from .graph.builder import build_marine_agent_graph, build_minimal_marine_graph
 from .graph.workflow import (
     get_marine_agent_graph,
+    get_minimal_marine_graph,
     run_marine_agent,
     run_marine_agent_async,
+    run_minimal_marine_graph,
+    run_minimal_marine_graph_async,
 )
-from .state.agent_state import AgentState
-from .schemas.intent import MarineIntent, IntentClassificationResult
+from .state.marine_state import MarineState, AgentState
+from .schemas.intent import (
+    MarineIntent,
+    MarineVariable,
+    StructuredLocation,
+    StructuredTimeRange,
+    StructuredVessel,
+    StructuredRoute,
+    QueryIntent,
+    IntentClassificationResult,
+)
 from .schemas.location_time import Coordinates, BoundingBox, SpatialContext, TemporalContext, SpatioTemporalContext
 from .schemas.plan import PlanStep, ExecutionPlan, ToolExecutionTarget
 from .schemas.evidence import EvidenceItem, EvidenceBundle, EvidenceType
 from .schemas.response import RoleType, SafetySeverity, SafetyAlert, VisualPayload, AgentResponse
+from .nodes.understand_query import understand_query, understand_query_node
+from .nodes.planner import planner, planner_node
 from .interfaces.p4_tools import (
     P4ToolProvider,
     MockP4ToolProvider,
@@ -32,13 +46,29 @@ from .interfaces.p6_analytics import (
 __all__ = [
     # Graph & Workflow
     "build_marine_agent_graph",
+    "build_minimal_marine_graph",
     "get_marine_agent_graph",
+    "get_minimal_marine_graph",
     "run_marine_agent",
     "run_marine_agent_async",
+    "run_minimal_marine_graph",
+    "run_minimal_marine_graph_async",
     # State
+    "MarineState",
     "AgentState",
+    # Nodes
+    "understand_query",
+    "understand_query_node",
+    "planner",
+    "planner_node",
     # Schemas
     "MarineIntent",
+    "MarineVariable",
+    "StructuredLocation",
+    "StructuredTimeRange",
+    "StructuredVessel",
+    "StructuredRoute",
+    "QueryIntent",
     "IntentClassificationResult",
     "Coordinates",
     "BoundingBox",

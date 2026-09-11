@@ -1,9 +1,13 @@
 """Evidence schemas for structuring and validating multi-source marine observations."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 from backend.agents.schemas.base import BaseModel, Field
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class EvidenceType(str, Enum):
@@ -35,7 +39,7 @@ class EvidenceItem(BaseModel):
         description="Reliability / confidence score."
     )
     spatial_tag: Optional[str] = Field(None, description="Spatial identifier or coordinates associated with evidence.")
-    timestamp: Optional[datetime] = Field(default_factory=datetime.utcnow, description="Time evidence was acquired.")
+    timestamp: Optional[datetime] = Field(default_factory=_utc_now, description="Time evidence was acquired.")
     raw_payload: Optional[Dict[str, Any]] = Field(
         default=None,
         description="Raw output payload from the tool or analytic model."
@@ -59,6 +63,6 @@ class EvidenceBundle(BaseModel):
         description="List of requested data points that could not be retrieved."
     )
     assembled_at: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=_utc_now,
         description="Timestamp of evidence assembly."
     )

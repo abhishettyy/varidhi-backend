@@ -107,12 +107,20 @@ TIME_PATTERNS: List[Tuple[str, str, str, Optional[str], bool]] = [
     (r"\byesterday\b", "yesterday", "yesterday", "all-day", True),
 ]
 
-# Non-location stopwords to ignore when checking prepositional place matches
+# Non-location stopwords & action words to ignore when checking place matches
 PLACE_STOPWORDS = {
     "this", "that", "the", "point", "this point", "restricted", "restricted area",
     "restricted marine zone", "marine zone", "zone", "area", "vessel", "ocean",
     "sea", "water", "here", "there", "tomorrow", "today", "tonight", "last 30 days",
     "pfz", "sst", "chlorophyll", "weather", "port", "harbor"
+}
+
+ACTION_STOPWORDS = {
+    "go", "fishing", "fish", "sail", "sailing", "swim", "swimming", "catch",
+    "tell", "me", "navigate", "cross", "venture", "see", "find", "this point",
+    "the ocean", "ocean", "restricted", "restricted area", "marine zone",
+    "restricted marine zone", "point", "here", "there", "tomorrow", "today",
+    "tonight", "last 30 days", "pfz", "sst", "chlorophyll", "weather", "vessel"
 }
 
 # Recognized vessel types
@@ -157,7 +165,6 @@ def extract_location(query: str, lower_query: str) -> Optional[StructuredLocatio
                 lat = -lat
             if coord_match.group(4) and coord_match.group(4).upper() == "W":
                 lon = -lon
-            # Clean coordinate string representation
             coord_str = f"{lat:.2f}, {lon:.2f}"
             return StructuredLocation(
                 name=coord_str,
@@ -180,9 +187,9 @@ def extract_location(query: str, lower_query: str) -> Optional[StructuredLocatio
                 region=loc_data.get("region"),
             )
 
-    # 3. Check for named unknown location (e.g. 'near X', 'around X', 'off X', 'in X')
+    # 3. Check for named unknown location (e.g. 'near X', 'around X', 'off X', 'offshore X')
     place_match = re.search(
-        r"\b(?:near|around|off|outside|at|in|to)\s+([A-Za-z][A-Za-z0-9\s'-]{2,25})",
+        r"\b(?:near|around|off|outside|offshore)\s+([A-Za-z][A-Za-z0-9\s'-]{2,25})",
         query,
         re.IGNORECASE
     )
@@ -190,9 +197,16 @@ def extract_location(query: str, lower_query: str) -> Optional[StructuredLocatio
         raw_place = place_match.group(1).strip()
         # Clean trailing query tokens
         raw_place = re.sub(r"\b(waters|coast|sea|port|harbor|bay|gulf|for|tomorrow|today|tonight|this|next|with|\?|\.|$)\b.*", "", raw_place, flags=re.IGNORECASE).strip()
+        raw_place = re.sub(r"^(?:the|a|an)\s+", "", raw_place, flags=re.IGNORECASE).strip()
         cleaned_lower = raw_place.lower().strip()
-        if cleaned_lower and cleaned_lower not in PLACE_STOPWORDS and len(cleaned_lower) >= 3:
-            # Check if this cleaned name matches a known port
+        tokens = cleaned_lower.split()
+
+        if (
+            cleaned_lower
+            and cleaned_lower not in PLACE_STOPWORDS
+            and len(cleaned_lower) >= 3
+            and not any(t in ACTION_STOPWORDS for t in tokens)
+        ):
             if cleaned_lower in KNOWN_COASTAL_LOCATIONS:
                 loc_data = KNOWN_COASTAL_LOCATIONS[cleaned_lower]
                 return StructuredLocation(

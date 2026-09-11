@@ -370,58 +370,8 @@ def mock_get_historical_data(parameters: Dict[str, Any], dependencies: Dict[str,
 # =====================================================================
 
 def mock_calculate_opportunity(parameters: Dict[str, Any], dependencies: Dict[str, Any]) -> Dict[str, Any]:
-    # Extract zones from dependencies if available
-    pfz_dep = {}
-    for dep_val in dependencies.values():
-        if isinstance(dep_val, dict) and "zones" in dep_val.get("data", {}):
-            pfz_dep = dep_val["data"]
-            break
-
-    zones = pfz_dep.get("zones", [
-        {"zone_id": "ZONE_A", "lat": 12.95, "lon": 74.80},
-        {"zone_id": "ZONE_B", "lat": 12.90, "lon": 74.95},
-        {"zone_id": "ZONE_C", "lat": 12.82, "lon": 75.05},
-    ])
-
-    scores = {
-        "ZONE_A": 94,
-        "ZONE_B": 83,
-        "ZONE_C": 96,
-    }
-
-    scored_zones = []
-    for z in zones:
-        zid = z.get("zone_id", "ZONE")
-        score = scores.get(zid, 80)
-        scored_zones.append({
-            **z,
-            "opportunity_score": score,
-            "convergence_grade": "High" if score > 90 else "Good",
-        })
-
-    return {
-        "status": "success",
-        "source": "mock",
-        "operation": "calculate_opportunity",
-        "data": {
-            "opportunity_evaluated": True,
-            "scored_zones": scored_zones,
-            "pfz_detected": True,
-            "recommended_hotspots": [
-                {
-                    "zone_id": z.get("zone_id"),
-                    "latitude": z.get("lat", 12.90),
-                    "longitude": z.get("lon", 74.95),
-                    "bearing": z.get("bearing", "SSW"),
-                    "distance_nm": z.get("distance_nm", 8.2),
-                    "target_depth_m": z.get("depth_m", 35),
-                    "likely_species": z.get("species", ["Mackerel", "Sardines"]),
-                    "opportunity_score": z.get("opportunity_score"),
-                }
-                for z in scored_zones
-            ],
-        },
-    }
+    from backend.agents.analytics.opportunity import calculate_opportunity_tool_entrypoint
+    return calculate_opportunity_tool_entrypoint(parameters, dependencies)
 
 
 def mock_calculate_marine_risk(parameters: Dict[str, Any], dependencies: Dict[str, Any]) -> Dict[str, Any]:

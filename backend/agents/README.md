@@ -1,175 +1,118 @@
-# Agent Orchestration Module (P3)
+# Marine Intelligence Platform — Agent Orchestration (P3) & Tools Integration (P4)
 
-Welcome to the **Agent Orchestration Module** for the **Agentic AI Marine Intelligence Platform**.
-
-This module is the central cognitive and workflow orchestration layer built using **LangGraph**. It manages query understanding, intent detection, spatio-temporal entity extraction, dynamic planning, multi-source data coordination, risk verification, evidence assembly, and role-tailored response synthesis.
+This module implements the cognitive orchestration engine (**P3**) and data retrieval tools (**P4**) for the **Agentic AI Marine Intelligence Platform**.
 
 ---
 
-## 👥 Ownership & Team Boundaries
+## 👥 Architecture & Ownership Boundaries
 
-To maintain clean separation and enable parallel hackathon development without merge conflicts, team responsibilities are strictly divided as follows:
-
-| Role | Responsibility Area | Integration Boundary with P3 |
-| :--- | :--- | :--- |
-| **P1** | **Fisherman UI** (Mobile/Web interface for fishermen) | Consumes `AgentResponse` with `RoleType.FISHERMAN` & `VisualPayload` |
-| **P2** | **Researcher & GIS UI** (Web dashboard for scientists) | Consumes `AgentResponse` with `RoleType.RESEARCHER` & GeoJSON layers |
-| **P3** | **Agent & LangGraph Orchestration** *(THIS MODULE)* | **Owns state graph, query parsing, planning, evidence, synthesis** |
-| **P4** | **Tools / MCP / External APIs** (INCOIS, NOAA, IMD) | Implements `P4ToolProvider` protocol; injected via `set_p4_provider` |
-| **P5** | **Data Ingestion & Datasets** (NetCDF, GRIB, Bathymetry) | Upstream data layer providing feeds accessed by P4 & P6 |
-| **P6** | **Marine Analytics & Deterministic Risk Calculations** | Implements `P6AnalyticsProvider` protocol; injected via `set_p6_provider` |
-
-> [!IMPORTANT]
-> **P3 DOES NOT** implement live external API clients (owned by P4), raw dataset ingestion pipelines (owned by P5), deterministic marine models / GIS math (owned by P6), or user interfaces (owned by P1/P2). P3 provides pluggable protocol interfaces with test mocks to enable independent development.
-
----
-
-## 🏗️ Architecture & LangGraph State Machine
+```text
+P3 = WHAT should happen (orchestration, planning, decision)
+P4 = HOW data is obtained (retrieval, adapters, normalization)
+P6 = HOW data is interpreted (marine risk, opportunity, calculations)
+```
 
 ```mermaid
 flowchart TD
-    Start([User Marine Query]) --> QU[Query Understanding Node]
-    QU --> |Intent + SpatioTemporal Context| Plan[Planning Node]
-    Plan --> |Ordered Plan Steps| TS[Tool Selection Node]
-    TS --> |Validated| Exec[Executor Node]
-    TS --> |Validation Error| Err[Error Handling Node]
+    User([User Natural Language Query]) --> Understand[P3 Query Understanding]
+    Understand --> Plan[P3 Planner]
+    Plan --> ExecPlan[Structured ExecutionPlan]
+    ExecPlan --> TS[P3 Tool Selection]
+    TS --> Exec[P3 Generic DAG Executor]
     
-    subgraph Subsystem Delegation
-        Exec -.-> |P4 Protocol| P4[P4 External Tools / MCP]
-        Exec -.-> |P6 Protocol| P6[P6 Marine Analytics & Risk]
+    subgraph Registry Layer
+        Exec --> Registry[Tool Registry]
     end
     
-    Exec --> EA[Evidence Assembly Node]
-    EA --> |Evidence Bundle| RG[Response Generation Node]
+    subgraph P4 Data Tools
+        Registry --> P4_PFZ[get_pfz]
+        Registry --> P4_SST[get_sst]
+        Registry --> P4_CHL[get_chlorophyll]
+        Registry --> P4_WIND[get_wind]
+        Registry --> P4_WAVE[get_wave]
+        Registry --> P4_SWELL[get_swell]
+        Registry --> P4_TIDE[get_tide]
+        Registry --> P4_CURR[get_currents]
+        Registry --> P4_RESTR[check_restrictions]
+    end
     
-    RG --> |AgentResponse| End([Output Response & Visual Payload])
-    Err --> |Fallback Safety Alert| End
+    subgraph P6 Analytics & Decision
+        Registry --> P6_OPP[calculate_opportunity]
+        Registry --> P6_RISK[calculate_marine_risk]
+        Registry --> P6_RANK[rank_zones]
+        Registry --> P3_DEC[select_safe_fishing_zone]
+    end
+    
+    P4_PFZ & P4_SST & P4_CHL --> P6_OPP
+    P4_WIND & P4_WAVE & P4_SWELL & P4_TIDE --> P6_RISK
+    P6_OPP & P6_RISK --> P6_RANK
+    P6_RANK & P4_RESTR --> P3_DEC
+    
+    P3_DEC --> RespGen[P3 Response Generation]
+    RespGen --> FinalResp([Structured AgentResponse & VisualPayload])
 ```
 
 ---
 
-## 📁 Directory Structure
+## 📦 Canonical Tool Result Contract (P4)
 
+Every P4 tool conforms to the standardized envelope schema:
+
+```python
+{
+    "status": "success",          # "success" | "partial" | "unavailable" | "error" | "failed"
+    "source": "synthetic",        # "synthetic" | "INCOIS" | "Open-Meteo" | "Copernicus"
+    "operation": "get_sst",       # Canonical operation name
+    "observation_time": "...",    # ISO 8601 observation/satellite timestamp (or None)
+    "valid_time": "...",          # ISO 8601 forecast validity timestamp (or None)
+    "data": { ... },              # Normalized domain data
+    "quality": "high",            # Data quality descriptor
+    "metadata": { ... }           # Technical dataset provenance
+}
 ```
-backend/agents/
-├── __init__.py                 # Public package exports (run_marine_agent, etc.)
-├── README.md                   # This integration guide
-├── state/
-│   ├── __init__.py
-│   └── agent_state.py          # TypedDict AgentState container for LangGraph
-├── schemas/
-│   ├── __init__.py
-│   ├── intent.py               # MarineIntent enums & classification models
-│   ├── location_time.py        # Coordinates, BoundingBox, Spatial & Temporal contexts
-│   ├── plan.py                 # PlanStep & ExecutionPlan schemas
-│   ├── evidence.py             # EvidenceItem & EvidenceBundle schemas
-│   └── response.py             # AgentResponse, SafetyAlert, VisualPayload schemas
-├── prompts/
-│   ├── __init__.py
-│   ├── system_prompts.py       # Domain directives & role personas (Fisherman vs Researcher)
-│   ├── intent_prompts.py       # Intent classification prompt templates
-│   ├── extraction_prompts.py   # Spatio-temporal extraction prompts
-│   ├── planning_prompts.py     # Execution plan templates
-│   └── synthesis_prompts.py    # Evidence synthesis prompts
-├── interfaces/
-│   ├── __init__.py
-│   ├── p4_tools.py             # Protocol contract and mock provider for P4
-│   └── p6_analytics.py         # Protocol contract and mock provider for P6
-├── nodes/
-│   ├── __init__.py
-│   ├── query_understanding.py  # Intent detection & entity extraction
-│   ├── planning.py             # Plan generation for data/calculations
-│   ├── tool_selection.py       # Pre-execution validation
-│   ├── executor.py             # Dispatcher to P4 & P6 interfaces
-│   ├── evidence_assembly.py    # Multi-source evidence aggregator
-│   ├── response_generation.py  # Persona-tailored response synthesizer
-│   └── error_handling.py       # Safety-first fallback handler
-└── graph/
-    ├── __init__.py
-    ├── builder.py              # StateGraph builder and conditional router
-    └── workflow.py             # High-level runner functions (run_marine_agent)
+
+### Time Semantics Contract
+- **Satellite / Observation Tools** (`get_sst`, `get_chlorophyll`, `get_pfz`): Use `latest_available` temporal mode. Populates `observation_time`, while `valid_time` is `None`.
+- **Forecast Tools** (`get_wind`, `get_wave`, `get_swell`, `get_tide`, `get_currents`): Use `forecast` temporal mode. Populates `valid_time`.
+
+---
+
+## 🛠️ Implemented P4 Tools
+
+| Tool Operation | Data Provided | Temporal Mode | Source Label |
+| :--- | :--- | :--- | :--- |
+| `get_pfz` | Multi-zone coordinates, bearing, distance, species | `latest_available` | `synthetic` |
+| `get_sst` | Mean SST, thermal gradient (°C/km), thermal fronts | `latest_available` | `synthetic` |
+| `get_chlorophyll` | Chlorophyll-a density ($mg/m^3$), productivity proxy | `latest_available` | `synthetic` |
+| `get_wind` | Speed (knots/m/s), direction, gusts | `forecast` | `synthetic` |
+| `get_wave` | Significant wave height ($H_s$), period, direction | `forecast` | `synthetic` |
+| `get_swell` | Swell height ($m$), period ($s$), direction | `forecast` | `synthetic` |
+| `get_tide` | Tide phase (flood/ebb), water level ($m$), tide times | `forecast` | `synthetic` |
+| `get_currents` | Current velocity (knots), direction | `forecast` | `synthetic` |
+| `check_restrictions` | Marine protected areas, port security, ban zones | N/A | `synthetic` |
+
+---
+
+## 🔌 Swapping Between Mock and P4 Tools
+
+The generic P3 DAG executor works transparently with both mock tools and P4 tools:
+
+```python
+from backend.agents.tools import use_p4_tools, use_mock_tools
+
+# Switch to P4 tools
+use_p4_tools()
+
+# Switch to mock tools
+use_mock_tools()
 ```
 
 ---
 
-## 🔌 Teammate Integration Guide
+## 🧪 Testing
 
-### For P4: Connecting Live Tools & MCP Services
-Create your implementation of `P4ToolProvider` and register it on startup:
-
-```python
-from backend.agents.interfaces.p4_tools import P4ToolProvider, set_p4_provider
-
-class LiveP4ToolProvider:
-    async def fetch_ocean_weather(self, location, forecast_horizon_hours=24):
-        # Your real API / MCP call to INCOIS/NOAA
-        return {"status": "success", "source": "INCOIS_LIVE", "data": {...}}
-
-    async def fetch_sst_data(self, location, timeframe=None):
-        return {"status": "success", "source": "COPERNICUS_SST", "data": {...}}
-
-    async def fetch_chlorophyll_data(self, location, timeframe=None):
-        return {"status": "success", "source": "NOAA_CHLOROPHYLL", "data": {...}}
-
-    async def fetch_hazard_bulletins(self, location):
-        return {"status": "success", "source": "IMD_BULLETINS", "data": {...}}
-
-# Register your provider
-set_p4_provider(LiveP4ToolProvider())
-```
-
-### For P6: Connecting Marine Analytics & Risk Models
-Create your implementation of `P6AnalyticsProvider` and register it on startup:
-
-```python
-from backend.agents.interfaces.p6_analytics import P6AnalyticsProvider, set_p6_provider
-
-class LiveP6AnalyticsProvider:
-    async def calculate_sea_state_risk(self, weather_data, vessel_type="small_motorized_boat"):
-        # Your deterministic safety calculation
-        return {"status": "success", "source": "P6_RISK_CALCULATOR", "data": {...}}
-
-    async def compute_pfz_zones(self, sst_data, chlorophyll_data, spatial_bounds=None):
-        # Your PFZ thermal front & chlorophyll convergence algorithm
-        return {"status": "success", "source": "P6_PFZ_CLUSTER_ENGINE", "data": {...}}
-
-    async def detect_algal_bloom_risk(self, water_quality_data, spatial_bounds=None):
-        return {"status": "success", "source": "P6_HAB_DETECTOR", "data": {...}}
-
-# Register your provider
-set_p6_provider(LiveP6AnalyticsProvider())
-```
-
-### For P1 & P2: Consuming Agent Responses in Frontend
-Call the orchestrator with the appropriate role:
-
-```python
-from backend.agents import run_marine_agent, RoleType
-
-# For Fisherman UI (P1)
-response = run_marine_agent(
-    query="Are there good fishing zones near Kochi tomorrow morning?",
-    role=RoleType.FISHERMAN
-)
-
-# Access clean markdown and visual payload
-print(response.markdown_content)
-print(response.safety_alert)              # Banner with severity: safe_green, caution_yellow, danger_red
-print(response.visual_payload.metric_badges)       # SST, Wave Height, Wind Speed
-print(response.visual_payload.map_features_geojson) # GeoJSON points/polygons for map rendering
-```
-
----
-
-## 🚀 Quickstart & Standalone Testing
-
-Run the module directly without needing external databases or infrastructure:
+Run the full test suite (90 tests):
 
 ```bash
-cd backend
-python -c "
-from agents import run_marine_agent, RoleType
-res = run_marine_agent('What is the sea weather and fishing condition near Kochi tomorrow?', role=RoleType.FISHERMAN)
-print(res.markdown_content)
-"
+python -m unittest discover -s backend
 ```

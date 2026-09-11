@@ -26,16 +26,24 @@ async def evidence_assembly_node(state: MarineState) -> Dict[str, Any]:
 
     # 1. Process P4 Tool Results
     for entry in tool_results:
-        op = entry.get("operation")
+        op = entry.get("operation", "")
         res = entry.get("result", {})
         data = res.get("data", {})
         source = res.get("source", "P4_TOOL_INTEGRATION")
 
-        if op == "fetch_ocean_weather":
-            wave = data.get("wave_height_m")
-            wind = data.get("wind_speed_knots")
+        if op in ("fetch_ocean_weather", "get_wind", "get_wave", "get_swell", "get_tide", "get_currents"):
+            wave = data.get("wave_height_m") or data.get("significant_wave_height_m") or data.get("swell_height_m")
+            wind = data.get("wind_speed_knots") or data.get("speed_knots")
             vis = data.get("visibility_km")
-            summary = f"Wave height {wave}m, Wind {wind} kts, Visibility {vis}km"
+            summary_parts = []
+            if wave is not None:
+                summary_parts.append(f"Wave height {wave}m")
+            if wind is not None:
+                summary_parts.append(f"Wind {wind} kts")
+            if vis is not None:
+                summary_parts.append(f"Visibility {vis}km")
+            summary = ", ".join(summary_parts) if summary_parts else f"Marine weather observation ({op})"
+
             evidence_items.append(
                 EvidenceItem(
                     evidence_id=f"ev_{uuid.uuid4().hex[:6]}",
@@ -47,8 +55,8 @@ async def evidence_assembly_node(state: MarineState) -> Dict[str, Any]:
                     raw_payload=data,
                 )
             )
-        elif op == "fetch_sst_data":
-            sst = data.get("mean_sst_celsius")
+        elif op in ("get_sst", "fetch_sst_data"):
+            sst = data.get("mean_sst_celsius") or data.get("value")
             evidence_items.append(
                 EvidenceItem(
                     evidence_id=f"ev_{uuid.uuid4().hex[:6]}",
@@ -60,14 +68,40 @@ async def evidence_assembly_node(state: MarineState) -> Dict[str, Any]:
                     raw_payload=data,
                 )
             )
-        elif op == "fetch_chlorophyll_data":
-            chla = data.get("chlorophyll_a_mg_m3")
+        elif op in ("get_chlorophyll", "fetch_chlorophyll_data"):
+            chla = data.get("chlorophyll_a_mg_m3") or data.get("value")
             evidence_items.append(
                 EvidenceItem(
                     evidence_id=f"ev_{uuid.uuid4().hex[:6]}",
                     evidence_type=EvidenceType.CHLOROPHYLL_DENSITY,
                     source=source,
                     summary=f"Chlorophyll-a density: {chla} mg/m³",
+                    metrics=data,
+                    spatial_tag=spatial_tag,
+                    raw_payload=data,
+                )
+            )
+        elif op in ("get_pfz", "fetch_pfz"):
+            zones = data.get("zones", [])
+            evidence_items.append(
+                EvidenceItem(
+                    evidence_id=f"ev_{uuid.uuid4().hex[:6]}",
+                    evidence_type=EvidenceType.PFZ_ZONE_ANALYTICS,
+                    source=source,
+                    summary=f"PFZ feed: {len(zones)} potential candidate zone(s) identified.",
+                    metrics={"zone_count": len(zones), "zones": zones},
+                    spatial_tag=spatial_tag,
+                    raw_payload=data,
+                )
+            )
+        elif op in ("check_restrictions", "check_geofence"):
+            restricted = data.get("restricted", False)
+            evidence_items.append(
+                EvidenceItem(
+                    evidence_id=f"ev_{uuid.uuid4().hex[:6]}",
+                    evidence_type=EvidenceType.GENERAL_OBSERVATION,
+                    source=source,
+                    summary=f"Maritime restrictions check: {'Restricted' if restricted else 'Clear'}",
                     metrics=data,
                     spatial_tag=spatial_tag,
                     raw_payload=data,
@@ -86,16 +120,28 @@ async def evidence_assembly_node(state: MarineState) -> Dict[str, Any]:
                     raw_payload=data,
                 )
             )
+        else:
+            evidence_items.append(
+                EvidenceItem(
+                    evidence_id=f"ev_{uuid.uuid4().hex[:6]}",
+                    evidence_type=EvidenceType.GENERAL_OBSERVATION,
+                    source=source,
+                    summary=f"Data retrieved for {op}",
+                    metrics=data,
+                    spatial_tag=spatial_tag,
+                    raw_payload=data,
+                )
+            )
 
     # 2. Process P6 Analytics Results
     for entry in analytics_results:
-        op = entry.get("operation")
+        op = entry.get("operation", "")
         res = entry.get("result", {})
         data = res.get("data", {})
         source = res.get("source", "P6_MARINE_ANALYTICS")
 
-        if op == "calculate_sea_state_risk":
-            score = data.get("risk_score")
+        if op in ("calculate_sea_state_risk", "calculate_marine_risk"):
+            score = data.get("risk_score") or data.get("score")
             severity = data.get("severity")
             evidence_items.append(
                 EvidenceItem(
@@ -108,8 +154,8 @@ async def evidence_assembly_node(state: MarineState) -> Dict[str, Any]:
                     raw_payload=data,
                 )
             )
-        elif op == "compute_pfz_zones":
-            hotspots = data.get("recommended_hotspots", [])
+        elif op in ("compute_pfz_zones", "calculate_opportunity", "rank_zones"):
+            hotspots = data.get("recommended_hotspots") or data.get("ranked_zones") or data.get("zones", [])
             evidence_items.append(
                 EvidenceItem(
                     evidence_id=f"ev_{uuid.uuid4().hex[:6]}",

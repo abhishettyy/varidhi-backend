@@ -26,6 +26,7 @@ from .schemas.intent import (
 )
 from .schemas.location_time import Coordinates, BoundingBox, SpatialContext, TemporalContext, SpatioTemporalContext
 from .schemas.plan import PlanStep, ExecutionPlan, ToolExecutionTarget
+from .schemas.tools import ToolResult, ToolResultStatus
 from .schemas.evidence import EvidenceItem, EvidenceBundle, EvidenceType
 from .schemas.response import RoleType, SafetySeverity, SafetyAlert, VisualPayload, AgentResponse
 from .nodes.understand_query import understand_query, understand_query_node
@@ -41,6 +42,21 @@ from .interfaces.p6_analytics import (
     MockP6AnalyticsProvider,
     get_p6_provider,
     set_p6_provider,
+)
+from .tools import (
+    register_p4_tools,
+    register_mock_tools,
+    use_p4_tools,
+    use_mock_tools,
+    p4_get_pfz,
+    p4_get_sst,
+    p4_get_chlorophyll,
+    p4_get_wind,
+    p4_get_wave,
+    p4_check_restrictions,
+    p4_get_swell,
+    p4_get_tide,
+    p4_get_currents,
 )
 
 __all__ = [
@@ -78,6 +94,8 @@ __all__ = [
     "PlanStep",
     "ExecutionPlan",
     "ToolExecutionTarget",
+    "ToolResult",
+    "ToolResultStatus",
     "EvidenceItem",
     "EvidenceBundle",
     "EvidenceType",
@@ -95,4 +113,18 @@ __all__ = [
     "MockP6AnalyticsProvider",
     "get_p6_provider",
     "set_p6_provider",
+    # P4 Tools & Registry Management
+    "register_p4_tools",
+    "register_mock_tools",
+    "use_p4_tools",
+    "use_mock_tools",
+    "p4_get_pfz",
+    "p4_get_sst",
+    "p4_get_chlorophyll",
+    "p4_get_wind",
+    "p4_get_wave",
+    "p4_check_restrictions",
+    "p4_get_swell",
+    "p4_get_tide",
+    "p4_get_currents",
 ]

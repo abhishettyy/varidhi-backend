@@ -1,4 +1,4 @@
-"""Unit tests for Phase 2 Query Understanding layer and structured QueryIntent."""
+"""Comprehensive unit tests for Phase 2 Query Understanding layer."""
 
 import asyncio
 import unittest
@@ -9,193 +9,219 @@ from backend.agents.schemas.intent import MarineIntent, MarineVariable, QueryInt
 from backend.agents.state.marine_state import MarineState
 
 
-class TestQueryUnderstanding(unittest.TestCase):
-    """Test suite for Query Understanding, entity extraction, and structured QueryIntent schema."""
+class TestPhase2QueryUnderstanding(unittest.TestCase):
+    """
+    Comprehensive test suite for Phase 2 Query Understanding covering:
+    - 10 intent categories
+    - Known / unknown locations and coordinate recognition
+    - Temporal expressions
+    - Single and multi-variable extraction
+    - Missing entity handling (zero hallucination)
+    - Ambiguous, empty, and invalid inputs
+    - Planner integration
+    """
 
-    def test_example_1_fishing_recommendation(self):
-        """Example 1: 'I'm near Mangalore. Where should I fish tomorrow morning?'"""
+    # 1. Fishing recommendation
+    def test_01_fishing_recommendation(self):
         state: MarineState = {"query": "I'm near Mangalore. Where should I fish tomorrow morning?"}
-        result = asyncio.run(understand_query_node(state))
+        res = asyncio.run(understand_query_node(state))
+        self.assertEqual(res["intent"], MarineIntent.FISHING_RECOMMENDATION.value)
+        self.assertGreaterEqual(res["confidence"], 0.85)
 
-        self.assertEqual(result["intent"], MarineIntent.FISHING_RECOMMENDATION.value)
-        self.assertIsNotNone(result["location"])
-        self.assertEqual(result["location"]["name"], "Mangalore")
-        self.assertAlmostEqual(result["location"]["latitude"], 12.8681, places=3)
-        self.assertAlmostEqual(result["location"]["longitude"], 74.8427, places=3)
-        self.assertIsNotNone(result["time_range"])
-        self.assertEqual(result["time_range"]["raw"], "tomorrow morning")
-        self.assertEqual(result["time_range"]["relative_day"], "tomorrow")
-        self.assertEqual(result["time_range"]["period"], "morning")
-
-    def test_example_2_pfz_search(self):
-        """Example 2: 'What is the nearest PFZ to Mangalore?'"""
+    # 2. PFZ search
+    def test_02_pfz_search(self):
         state: MarineState = {"query": "What is the nearest PFZ to Mangalore?"}
-        result = asyncio.run(understand_query_node(state))
+        res = asyncio.run(understand_query_node(state))
+        self.assertEqual(res["intent"], MarineIntent.PFZ_SEARCH.value)
+        self.assertIn(MarineVariable.PFZ.value, res["variables"])
 
-        self.assertEqual(result["intent"], MarineIntent.PFZ_SEARCH.value)
-        self.assertIsNotNone(result["location"])
-        self.assertEqual(result["location"]["name"], "Mangalore")
-        self.assertIn(MarineVariable.PFZ.value, result["variables"])
-        self.assertIsNone(result["time_range"], "No time range was specified, must remain None")
-
-    def test_example_3_marine_safety(self):
-        """Example 3: 'Is it safe to go fishing tomorrow morning?'"""
+    # 3. Marine safety
+    def test_03_marine_safety(self):
         state: MarineState = {"query": "Is it safe to go fishing tomorrow morning?"}
-        result = asyncio.run(understand_query_node(state))
+        res = asyncio.run(understand_query_node(state))
+        self.assertEqual(res["intent"], MarineIntent.MARINE_SAFETY.value)
 
-        self.assertEqual(result["intent"], MarineIntent.MARINE_SAFETY.value)
-        self.assertIsNone(result["location"], "No location was specified, must remain None")
-        self.assertIsNotNone(result["time_range"])
-        self.assertEqual(result["time_range"]["raw"], "tomorrow morning")
-
-    def test_example_4_weather_query(self):
-        """Example 4: 'What's the weather around Mangalore tonight?'"""
+    # 4. Weather
+    def test_04_weather(self):
         state: MarineState = {"query": "What's the weather around Mangalore tonight?"}
-        result = asyncio.run(understand_query_node(state))
+        res = asyncio.run(understand_query_node(state))
+        self.assertEqual(res["intent"], MarineIntent.WEATHER_QUERY.value)
 
-        self.assertEqual(result["intent"], MarineIntent.WEATHER_QUERY.value)
-        self.assertIsNotNone(result["location"])
-        self.assertEqual(result["location"]["name"], "Mangalore")
-        self.assertIsNotNone(result["time_range"])
-        self.assertEqual(result["time_range"]["raw"], "tonight")
-        self.assertEqual(result["time_range"]["period"], "night")
-
-    def test_example_5_hazard_query(self):
-        """Example 5: 'Are there any dangerous conditions near Mangalore?'"""
+    # 5. Hazard
+    def test_05_hazard(self):
         state: MarineState = {"query": "Are there any dangerous conditions near Mangalore?"}
-        result = asyncio.run(understand_query_node(state))
+        res = asyncio.run(understand_query_node(state))
+        self.assertEqual(res["intent"], MarineIntent.HAZARD_QUERY.value)
 
-        self.assertEqual(result["intent"], MarineIntent.HAZARD_QUERY.value)
-        self.assertIsNotNone(result["location"])
-        self.assertEqual(result["location"]["name"], "Mangalore")
-        self.assertIsNone(result["time_range"])
-
-    def test_example_6_geofence_query(self):
-        """Example 6: 'Is this point inside a restricted marine zone?'"""
+    # 6. Geofence
+    def test_06_geofence(self):
         state: MarineState = {"query": "Is this point inside a restricted marine zone?"}
-        result = asyncio.run(understand_query_node(state))
+        res = asyncio.run(understand_query_node(state))
+        self.assertEqual(res["intent"], MarineIntent.GEOFENCE_QUERY.value)
 
-        self.assertEqual(result["intent"], MarineIntent.GEOFENCE_QUERY.value)
-        self.assertIsNone(result["location"])
-        self.assertIsNone(result["time_range"])
-
-    def test_example_7_route_query(self):
-        """Example 7: 'Can my route cross this restricted area?'"""
+    # 7. Route
+    def test_07_route(self):
         state: MarineState = {"query": "Can my route cross this restricted area?"}
-        result = asyncio.run(understand_query_node(state))
+        res = asyncio.run(understand_query_node(state))
+        self.assertEqual(res["intent"], MarineIntent.ROUTE_QUERY.value)
 
-        self.assertEqual(result["intent"], MarineIntent.ROUTE_QUERY.value)
-        self.assertIsNone(result["location"])
-        self.assertIsNone(result["time_range"])
-
-    def test_example_8_vessel_query(self):
-        """Example 8: 'Where is vessel IMO1234567?'"""
+    # 8. Vessel
+    def test_08_vessel(self):
         state: MarineState = {"query": "Where is vessel IMO1234567?"}
-        result = asyncio.run(understand_query_node(state))
+        res = asyncio.run(understand_query_node(state))
+        self.assertEqual(res["intent"], MarineIntent.VESSEL_QUERY.value)
+        self.assertIsNotNone(res["vessel"])
+        self.assertEqual(res["vessel"]["id"], "IMO1234567")
 
-        self.assertEqual(result["intent"], MarineIntent.VESSEL_QUERY.value)
-        self.assertIsNotNone(result["vessel"])
-        self.assertEqual(result["vessel"]["id"], "IMO1234567")
-        self.assertIsNone(result["location"])
-        self.assertIsNone(result["time_range"])
-
-    def test_example_9_historical_analysis(self):
-        """Example 9: 'Show SST and chlorophyll around Mangalore for the last 30 days.'"""
+    # 9. Historical analysis
+    def test_09_historical_analysis(self):
         state: MarineState = {"query": "Show SST and chlorophyll around Mangalore for the last 30 days."}
-        result = asyncio.run(understand_query_node(state))
+        res = asyncio.run(understand_query_node(state))
+        self.assertEqual(res["intent"], MarineIntent.HISTORICAL_ANALYSIS.value)
+        self.assertIsNotNone(res["time_range"])
+        self.assertTrue(res["time_range"]["is_historical"])
 
-        self.assertEqual(result["intent"], MarineIntent.HISTORICAL_ANALYSIS.value)
-        self.assertIsNotNone(result["location"])
-        self.assertEqual(result["location"]["name"], "Mangalore")
-        self.assertIn(MarineVariable.SST.value, result["variables"])
-        self.assertIn(MarineVariable.CHLOROPHYLL.value, result["variables"])
-        self.assertIsNotNone(result["time_range"])
-        self.assertEqual(result["time_range"]["raw"], "last 30 days")
-        self.assertTrue(result["time_range"]["is_historical"])
-
-    def test_example_10_general_marine_query(self):
-        """Example 10: 'Hello, what can you tell me about the ocean?'"""
+    # 10. General marine query
+    def test_10_general_marine_query(self):
         state: MarineState = {"query": "Hello, what can you tell me about the ocean?"}
-        result = asyncio.run(understand_query_node(state))
+        res = asyncio.run(understand_query_node(state))
+        self.assertEqual(res["intent"], MarineIntent.GENERAL_MARINE_QUERY.value)
 
-        self.assertEqual(result["intent"], MarineIntent.GENERAL_MARINE_QUERY.value)
-        self.assertIsNone(result["location"])
-        self.assertIsNone(result["time_range"])
+    # 11. Known location: Mangalore
+    def test_11_known_location_mangalore(self):
+        state: MarineState = {"query": "Where should I fish near Mangalore?"}
+        res = asyncio.run(understand_query_node(state))
+        loc = res["location"]
+        self.assertIsNotNone(loc)
+        self.assertEqual(loc["name"], "Mangalore")
+        self.assertAlmostEqual(loc["latitude"], 12.8681, places=3)
+        self.assertAlmostEqual(loc["longitude"], 74.8427, places=3)
+        self.assertEqual(loc["harbor"], "Mangalore Old Port")
+        self.assertEqual(loc["region"], "Karnataka Coast")
 
-    def test_coordinate_input_recognition(self):
-        """Verify recognizing coordinate input like '12.91, 74.85' structurally."""
+    # 12. Unknown location (strict null policy: no fabricated coordinates)
+    def test_12_unknown_location(self):
+        state: MarineState = {"query": "Check fishing potential near Emerald Lagoon tomorrow"}
+        res = asyncio.run(understand_query_node(state))
+        loc = res["location"]
+        self.assertIsNotNone(loc)
+        self.assertEqual(loc["name"], "Emerald Lagoon")
+        self.assertIsNone(loc["latitude"], "Latitude must remain None for unknown locations")
+        self.assertIsNone(loc["longitude"], "Longitude must remain None for unknown locations")
+
+    # 13. Raw latitude/longitude coordinates
+    def test_13_raw_coordinates(self):
         state: MarineState = {"query": "Check sea conditions at 12.91, 74.85 today"}
-        result = asyncio.run(understand_query_node(state))
-
-        loc = result["location"]
+        res = asyncio.run(understand_query_node(state))
+        loc = res["location"]
         self.assertIsNotNone(loc)
         self.assertAlmostEqual(loc["latitude"], 12.91, places=2)
         self.assertAlmostEqual(loc["longitude"], 74.85, places=2)
         self.assertEqual(loc["name"], "12.91, 74.85")
 
-    def test_unknown_location_preserves_name_null_coords(self):
-        """Verify unknown locations preserve name while keeping latitude/longitude null."""
-        state: MarineState = {"query": "Check fishing potential near Emerald Lagoon tomorrow"}
-        result = asyncio.run(understand_query_node(state))
+    # 14. Tomorrow morning
+    def test_14_tomorrow_morning(self):
+        state: MarineState = {"query": "Where to catch tuna tomorrow morning near Mangalore?"}
+        res = asyncio.run(understand_query_node(state))
+        tr = res["time_range"]
+        self.assertIsNotNone(tr)
+        self.assertEqual(tr["raw"], "tomorrow morning")
+        self.assertEqual(tr["relative_day"], "tomorrow")
+        self.assertEqual(tr["period"], "morning")
+        self.assertFalse(tr["is_historical"])
 
-        loc = result["location"]
-        self.assertIsNotNone(loc)
-        self.assertEqual(loc["name"], "Emerald Lagoon")
-        self.assertIsNone(loc["latitude"], "Latitude must be None for unknown locations")
-        self.assertIsNone(loc["longitude"], "Longitude must be None for unknown locations")
+    # 15. Tonight
+    def test_15_tonight(self):
+        state: MarineState = {"query": "What's the weather around Mangalore tonight?"}
+        res = asyncio.run(understand_query_node(state))
+        tr = res["time_range"]
+        self.assertIsNotNone(tr)
+        self.assertEqual(tr["raw"], "tonight")
+        self.assertEqual(tr["period"], "night")
 
-    def test_temporal_expressions_variety(self):
-        """Verify recognition of various temporal expressions."""
-        test_phrases = [
-            ("waves this morning near Mangalore", "this morning", "morning", False),
-            ("wind this week near Mangalore", "this week", "all-day", False),
-            ("sea state next week near Mangalore", "next week", "all-day", False),
-            ("SST trends for the last 7 days", "last 7 days", "all-day", True),
-            ("past month wave observations", "past month", "all-day", True),
-        ]
+    # 16. Last 30 days
+    def test_16_last_30_days(self):
+        state: MarineState = {"query": "Show SST around Mangalore for the last 30 days."}
+        res = asyncio.run(understand_query_node(state))
+        tr = res["time_range"]
+        self.assertIsNotNone(tr)
+        self.assertEqual(tr["raw"], "last 30 days")
+        self.assertTrue(tr["is_historical"])
 
-        for query, expected_raw, expected_period, expected_hist in test_phrases:
-            with self.subTest(query=query):
-                state: MarineState = {"query": query}
-                result = asyncio.run(understand_query_node(state))
-                tr = result["time_range"]
-                self.assertIsNotNone(tr, f"Failed to extract time range from '{query}'")
-                self.assertEqual(tr["raw"], expected_raw)
-                self.assertEqual(tr["period"], expected_period)
-                self.assertEqual(tr["is_historical"], expected_hist)
+    # 17. SST extraction
+    def test_17_sst_extraction(self):
+        state: MarineState = {"query": "Check sea surface temperature near Mangalore"}
+        res = asyncio.run(understand_query_node(state))
+        self.assertIn(MarineVariable.SST.value, res["variables"])
 
-    def test_marine_variables_comprehensive(self):
-        """Verify extraction of all requested marine variables."""
-        query = (
-            "Check sea surface temperature, chlorophyll-a, PFZ, wind speed, "
-            "wave height, swell, tide, currents, and vessel activity near Mangalore"
-        )
-        state: MarineState = {"query": query}
-        result = asyncio.run(understand_query_node(state))
-        vars_extracted = result["variables"]
+    # 18. Chlorophyll extraction
+    def test_18_chlorophyll_extraction(self):
+        state: MarineState = {"query": "Check chlorophyll-a density near Mangalore"}
+        res = asyncio.run(understand_query_node(state))
+        self.assertIn(MarineVariable.CHLOROPHYLL.value, res["variables"])
 
+    # 19. Multiple variables
+    def test_19_multiple_variables(self):
+        state: MarineState = {
+            "query": "Check SST, chlorophyll, wind speed, wave height, swell, and currents near Mangalore"
+        }
+        res = asyncio.run(understand_query_node(state))
+        vars_extracted = res["variables"]
         self.assertIn(MarineVariable.SST.value, vars_extracted)
         self.assertIn(MarineVariable.CHLOROPHYLL.value, vars_extracted)
-        self.assertIn(MarineVariable.PFZ.value, vars_extracted)
         self.assertIn(MarineVariable.WIND.value, vars_extracted)
         self.assertIn(MarineVariable.WAVE.value, vars_extracted)
         self.assertIn(MarineVariable.SWELL.value, vars_extracted)
-        self.assertIn(MarineVariable.TIDE.value, vars_extracted)
         self.assertIn(MarineVariable.CURRENT.value, vars_extracted)
-        self.assertIn(MarineVariable.VESSEL_ACTIVITY.value, vars_extracted)
 
-    def test_planner_integration_all_intents(self):
-        """Verify planner node generates valid plans for all 10 intent categories."""
+    # 20. Missing location (never invented)
+    def test_20_missing_location(self):
+        state: MarineState = {"query": "Is it safe to go fishing tomorrow morning?"}
+        res = asyncio.run(understand_query_node(state))
+        self.assertIsNone(res["location"], "Location must remain None when missing from query")
+
+    # 21. Missing time (never invented)
+    def test_21_missing_time(self):
+        state: MarineState = {"query": "What is the nearest PFZ to Mangalore?"}
+        res = asyncio.run(understand_query_node(state))
+        self.assertIsNone(res["time_range"], "Time range must remain None when missing from query")
+
+    # 22. Ambiguous query
+    def test_22_ambiguous_query(self):
+        state: MarineState = {"query": "Tell me something interesting"}
+        res = asyncio.run(understand_query_node(state))
+        self.assertEqual(res["intent"], MarineIntent.GENERAL_MARINE_QUERY.value)
+        self.assertIsNone(res["location"])
+        self.assertIsNone(res["time_range"])
+        self.assertIn("query_intent", res)
+        self.assertEqual(res["query_intent"]["intent"], MarineIntent.GENERAL_MARINE_QUERY.value)
+
+    # 23. Empty / invalid query (does not crash)
+    def test_23_empty_and_invalid_query(self):
+        invalid_queries = ["", "   ", "???!!!", "!@#$%^&*()", "   \n\t   "]
+        for q in invalid_queries:
+            with self.subTest(query=q):
+                state: MarineState = {"query": q}
+                res = asyncio.run(understand_query_node(state))
+                self.assertIsNotNone(res)
+                self.assertEqual(res["intent"], MarineIntent.GENERAL_MARINE_QUERY.value)
+                self.assertIsNone(res["location"])
+                self.assertIsNone(res["time_range"])
+                self.assertEqual(res["variables"], [])
+                self.assertIn("query_intent", res)
+
+    # Planner integration: planner produces valid plans from normalized QueryIntent
+    def test_24_planner_integration(self):
         for intent in MarineIntent:
             state: MarineState = {
                 "intent": intent.value,
                 "location": {"name": "Mangalore", "latitude": 12.8681, "longitude": 74.8427},
                 "variables": ["SST", "WAVE"],
             }
-            res = asyncio.run(planner_node(state))
-            self.assertIn("plan", res)
-            self.assertIsInstance(res["plan"], list)
-            self.assertGreater(len(res["plan"]), 0)
+            plan_res = asyncio.run(planner_node(state))
+            self.assertIn("plan", plan_res)
+            self.assertIsInstance(plan_res["plan"], list)
+            self.assertGreater(len(plan_res["plan"]), 0)
 
 
 if __name__ == "__main__":

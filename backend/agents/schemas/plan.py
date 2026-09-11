@@ -1,52 +1,113 @@
-"""Plan schemas for orchestrating data retrieval and marine calculation steps."""
+"""Plan schemas for orchestrating data retrieval, analytics, decision, and response steps."""
 
+import uuid
 from enum import Enum
 from typing import Any, Dict, List, Optional
 from backend.agents.schemas.base import BaseModel, Field
 
 
+class StepType(str, Enum):
+    """Categorization of execution plan steps."""
+    DATA = "DATA"              # Data acquisition operations (P4 / external feeds)
+    ANALYTICS = "ANALYTICS"    # Algorithmic calculation operations (P6 / risk & convergence)
+    DECISION = "DECISION"      # Decision validation & zone selection
+    RESPONSE = "RESPONSE"      # Final advisory and markdown synthesis
+
+
 class ToolExecutionTarget(str, Enum):
-    """Specifies which subsystem/teammate component executes the step."""
-    P4_EXTERNAL_TOOL = "p4_external_tool"          # Handled by P4 (MCP / APIs / weather / SST / Chlorophyll)
+    """Specifies which subsystem executes the step."""
+    P4_EXTERNAL_TOOL = "p4_external_tool"          # Handled by P4 (APIs / weather / SST / Chlorophyll)
     P6_MARINE_ANALYTICS = "p6_marine_analytics"    # Handled by P6 (Risk indices, PFZ clustering, wave models)
     INTERNAL_SYNTHESIS = "internal_synthesis"      # Handled internally by P3 (Assembly / formatting)
 
 
 class PlanStep(BaseModel):
     """A single discrete step in the agent execution plan."""
-    step_id: str = Field(..., description="Unique step identifier, e.g., 'step_1'.")
-    title: str = Field(..., description="Human-readable title of the step.")
-    description: str = Field(..., description="Details on what this step performs.")
-    target: ToolExecutionTarget = Field(..., description="Subsystem target responsible for execution.")
-    operation_name: str = Field(
+    id: str = Field(..., description="Unique step identifier, e.g., 'pfz', 'sst', 'risk', 'decision'.")
+    type: str = Field(StepType.DATA.value, description="Step category: DATA, ANALYTICS, DECISION, RESPONSE.")
+    operation: str = Field(
         ...,
-        description="Name of the P4 tool or P6 function (e.g., 'fetch_ocean_weather', 'compute_pfz_score')."
-    )
-    parameters: Dict[str, Any] = Field(
-        default_factory=dict,
-        description="Parameters to pass to the tool/analytic function."
+        description="Name of the operation (e.g. 'get_pfz', 'calculate_marine_risk', 'select_safe_fishing_zone')."
     )
     depends_on: List[str] = Field(
         default_factory=list,
-        description="List of step_ids that must complete before this step can run."
+        description="List of step IDs that must complete before this step can execute."
     )
-    is_required: bool = Field(
+    required: bool = Field(
         default=True,
-        description="Whether failure of this step aborts the workflow or allows soft fallback."
+        description="Whether this step is mandatory for workflow completion."
     )
+    parameters: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Parameters passed to the tool or analytics function."
+    )
+
+    # Backwards compatibility attributes
+    step_id: Optional[str] = Field(default=None, description="Legacy step ID alias.")
+    title: Optional[str] = Field(default=None, description="Human-readable title.")
+    description: Optional[str] = Field(default=None, description="Step description.")
+    target: Optional[ToolExecutionTarget] = Field(default=None, description="Execution target subsystem.")
+    operation_name: Optional[str] = Field(default=None, description="Legacy operation name alias.")
+    is_required: Optional[bool] = Field(default=None, description="Legacy is_required alias.")
+
+    def __init__(self, **kwargs):
+        # Sync legacy and new field names
+        if "step_id" in kwargs and "id" not in kwargs:
+            kwargs["id"] = kwargs["step_id"]
+        elif "id" in kwargs and "step_id" not in kwargs:
+            kwargs["step_id"] = kwargs["id"]
+
+        if "operation_name" in kwargs and "operation" not in kwargs:
+            kwargs["operation"] = kwargs["operation_name"]
+        elif "operation" in kwargs and "operation_name" not in kwargs:
+            kwargs["operation_name"] = kwargs["operation"]
+
+        if "is_required" in kwargs and "required" not in kwargs:
+            kwargs["required"] = kwargs["is_required"]
+        elif "required" in kwargs and "is_required" not in kwargs:
+            kwargs["is_required"] = kwargs["required"]
+
+        if "target" not in kwargs or kwargs["target"] is None:
+            step_type = kwargs.get("type", StepType.DATA.value)
+            if step_type == StepType.DATA.value:
+                kwargs["target"] = ToolExecutionTarget.P4_EXTERNAL_TOOL
+            elif step_type == StepType.ANALYTICS.value:
+                kwargs["target"] = ToolExecutionTarget.P6_MARINE_ANALYTICS
+            else:
+                kwargs["target"] = ToolExecutionTarget.INTERNAL_SYNTHESIS
+
+        super().__init__(**kwargs)
 
 
 class ExecutionPlan(BaseModel):
-    """Complete execution plan generated by the planning node."""
-    plan_id: str = Field(..., description="Unique plan identifier.")
-    summary: str = Field(..., description="High level summary of the plan.")
+    """Complete structured execution plan generated by the planning node."""
+    plan_id: str = Field(
+        default_factory=lambda: f"plan_{uuid.uuid4().hex[:8]}",
+        description="Unique plan identifier."
+    )
+    intent: Optional[str] = Field(
+        default=None,
+        description="The primary marine intent this plan addresses."
+    )
+    summary: str = Field(
+        default="Execution plan",
+        description="High level summary of the plan."
+    )
     steps: List[PlanStep] = Field(
         default_factory=list,
-        description="Ordered list of steps to execute."
+        description="Ordered list of execution steps."
+    )
+    requires_clarification: bool = Field(
+        default=False,
+        description="True if mandatory information is missing to fulfill the request."
+    )
+    missing: List[str] = Field(
+        default_factory=list,
+        description="List of missing parameters (e.g. ['location'] or ['vessel'])."
     )
     requires_marine_safety_check: bool = Field(
         default=True,
-        description="Enforces mandatory safety index calculation prior to fishing advisories."
+        description="Enforces mandatory safety index calculation prior to advisories."
     )
     estimated_complexity: str = Field(
         default="standard",

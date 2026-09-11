@@ -24,9 +24,20 @@ def main():
     print(f"• Location:     {json.dumps(state.get('location'), indent=2)}")
     print(f"• Time Range:   {json.dumps(state.get('time_range'), indent=2)}")
     print(f"• Variables:    {state.get('variables')}")
-    print(f"• Plan:         {state.get('plan')}")
-    print(f"• Query Intent: {json.dumps(state.get('query_intent'), indent=2)}")
-    print(f"• Errors:       {state.get('errors')}")
+
+    exec_plan = state.get("execution_plan")
+    if exec_plan:
+        print("\n=== STRUCTURED EXECUTION PLAN ===")
+        print(f"• Plan ID:     {exec_plan.plan_id}")
+        print(f"• Summary:     {exec_plan.summary}")
+        print(f"• Steps Count: {len(exec_plan.steps)}")
+        print("• Steps Detail:")
+        for step in exec_plan.steps:
+            dep_str = f" [depends on: {', '.join(step.depends_on)}]" if step.depends_on else " [independent/parallel]"
+            req_str = "mandatory" if step.required else "optional"
+            print(f"  - [{step.type}] {step.id} ({step.operation}) | {req_str}{dep_str}")
+
+    print(f"\n• Errors:       {state.get('errors')}")
 
 
 if __name__ == "__main__":

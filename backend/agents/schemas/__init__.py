@@ -17,7 +17,7 @@ from .location_time import (
     TemporalContext,
     SpatioTemporalContext,
 )
-from .plan import PlanStep, ExecutionPlan, ToolExecutionTarget
+from .plan import StepType, PlanStep, ExecutionPlan, ToolExecutionTarget
 from .evidence import EvidenceItem, EvidenceBundle, EvidenceType
 from .response import (
     RoleType,
@@ -41,6 +41,7 @@ __all__ = [
     "SpatialContext",
     "TemporalContext",
     "SpatioTemporalContext",
+    "StepType",
     "PlanStep",
     "ExecutionPlan",
     "ToolExecutionTarget",

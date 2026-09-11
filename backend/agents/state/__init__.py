@@ -1,5 +1,5 @@
 """State package for LangGraph agent workflow."""
 
-from .agent_state import AgentState
+from .marine_state import MarineState, AgentState
 
-__all__ = ["AgentState"]
+__all__ = ["MarineState", "AgentState"]

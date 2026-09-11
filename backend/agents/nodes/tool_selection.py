@@ -1,31 +1,108 @@
 """Tool selection node: validates operation prerequisites and prepares invocation payloads."""
 
-from typing import Any, Dict
-from backend.agents.state.agent_state import AgentState
+from typing import Any, Dict, List
+from backend.agents.schemas.plan import PlanStep, ToolExecutionTarget
+from backend.agents.state.marine_state import MarineState
 
 
-async def tool_selection_node(state: AgentState) -> Dict[str, Any]:
+async def tool_selection_node(state: MarineState) -> Dict[str, Any]:
     """
-    LangGraph node: Validates that tools selected in the execution plan are available
-    and formatted with all necessary spatial and temporal inputs.
+    LangGraph node: Validates tools and prepares invocation steps from the plan.
+    Supports both list-of-strings plans (e.g. ['PFZ', 'SST', 'weather']) and ExecutionPlan objects.
     """
-    plan = state.get("execution_plan")
+    plan = state.get("plan")
+    exec_plan = state.get("execution_plan")
+    location = state.get("location") or {}
     errors = list(state.get("errors", []))
 
-    if not plan or not plan.steps:
-        return {
-            "errors": errors + ["No execution plan steps found in state."],
-            "fallback_mode": True,
-        }
+    prepared_steps: List[PlanStep] = []
 
-    # Verify that dependencies exist
-    step_ids = {step.step_id for step in plan.steps}
-    for step in plan.steps:
-        for dep in step.depends_on:
-            if dep not in step_ids:
-                errors.append(f"Step {step.step_id} depends on unknown step {dep}.")
+    if isinstance(plan, list) and len(plan) > 0:
+        for item in plan:
+            item_str = str(item).upper()
+            if "WEATHER" in item_str or "WIND" in item_str:
+                prepared_steps.append(
+                    PlanStep(
+                        step_id="step_weather",
+                        title="Fetch Ocean Weather",
+                        description="Retrieve wind and surface conditions",
+                        target=ToolExecutionTarget.P4_EXTERNAL_TOOL,
+                        operation_name="fetch_ocean_weather",
+                        parameters={"location": location},
+                    )
+                )
+            elif "SST" in item_str:
+                prepared_steps.append(
+                    PlanStep(
+                        step_id="step_sst",
+                        title="Fetch Sea Surface Temperature",
+                        description="Retrieve SST thermal fronts",
+                        target=ToolExecutionTarget.P4_EXTERNAL_TOOL,
+                        operation_name="fetch_sst_data",
+                        parameters={"location": location},
+                    )
+                )
+            elif "PFZ" in item_str or "CHLOROPHYLL" in item_str:
+                prepared_steps.append(
+                    PlanStep(
+                        step_id="step_chlorophyll",
+                        title="Fetch Chlorophyll-a",
+                        description="Retrieve phytoplankton density",
+                        target=ToolExecutionTarget.P4_EXTERNAL_TOOL,
+                        operation_name="fetch_chlorophyll_data",
+                        parameters={"location": location},
+                    )
+                )
+                prepared_steps.append(
+                    PlanStep(
+                        step_id="step_pfz_calc",
+                        title="Compute PFZ Hotspots",
+                        description="Calculate biological convergence",
+                        target=ToolExecutionTarget.P6_MARINE_ANALYTICS,
+                        operation_name="compute_pfz_zones",
+                        parameters={"spatial_bounds": location},
+                    )
+                )
+            elif "WAVES" in item_str or "RISK" in item_str:
+                prepared_steps.append(
+                    PlanStep(
+                        step_id="step_risk_calc",
+                        title="Calculate Sea State Risk",
+                        description="Compute vessel safety index",
+                        target=ToolExecutionTarget.P6_MARINE_ANALYTICS,
+                        operation_name="calculate_sea_state_risk",
+                        parameters={"vessel_type": "small_motorized_boat"},
+                    )
+                )
+            elif "HAZARD" in item_str:
+                prepared_steps.append(
+                    PlanStep(
+                        step_id="step_hazards",
+                        title="Fetch Hazard Bulletins",
+                        description="Retrieve meteorological bulletins",
+                        target=ToolExecutionTarget.P4_EXTERNAL_TOOL,
+                        operation_name="fetch_hazard_bulletins",
+                        parameters={"location": location},
+                    )
+                )
+
+    elif exec_plan and exec_plan.steps:
+        prepared_steps = exec_plan.steps
+
+    # If no specific steps could be resolved, add default baseline observation
+    if not prepared_steps:
+        prepared_steps.append(
+            PlanStep(
+                step_id="step_weather",
+                title="Fetch Baseline Weather",
+                description="Default weather check",
+                target=ToolExecutionTarget.P4_EXTERNAL_TOOL,
+                operation_name="fetch_ocean_weather",
+                parameters={"location": location},
+            )
+        )
 
     return {
+        "execution_steps": prepared_steps,
         "errors": errors,
-        "fallback_mode": len(errors) > 0,
     }

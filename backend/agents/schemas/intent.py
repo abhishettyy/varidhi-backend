@@ -7,29 +7,34 @@ from backend.agents.schemas.base import BaseModel, Field
 
 class MarineIntent(str, Enum):
     """Supported marine intelligence intents."""
-    POTENTIAL_FISHING_ZONE = "potential_fishing_zone"
-    OCEAN_WEATHER_SAFETY = "ocean_weather_safety"
-    HAZARD_ALERT = "hazard_alert"
-    WATER_QUALITY_ALGAL_BLOOM = "water_quality_algal_bloom"
-    NAVIGATION_ADVISORY = "navigation_advisory"
-    GENERAL_MARINE_QUERY = "general_marine_query"
-    OUT_OF_SCOPE = "out_of_scope"
+    # Standard uppercase values
+    FISHING_RECOMMENDATION = "FISHING_RECOMMENDATION"
+    WEATHER_SAFETY = "WEATHER_SAFETY"
+    HAZARD_ALERT = "HAZARD_ALERT"
+    WATER_QUALITY = "WATER_QUALITY"
+    NAVIGATION_ADVISORY = "NAVIGATION_ADVISORY"
+    GENERAL_QUERY = "GENERAL_QUERY"
+    OUT_OF_SCOPE = "OUT_OF_SCOPE"
+
+    # Aliases for compatibility
+    POTENTIAL_FISHING_ZONE = "FISHING_RECOMMENDATION"
+    OCEAN_WEATHER_SAFETY = "WEATHER_SAFETY"
+    WATER_QUALITY_ALGAL_BLOOM = "WATER_QUALITY"
+    GENERAL_MARINE_QUERY = "GENERAL_QUERY"
 
 
 class IntentClassificationResult(BaseModel):
     """Structured output of intent detection."""
-    primary_intent: MarineIntent = Field(
-        ...,
+    primary_intent: str = Field(
+        MarineIntent.FISHING_RECOMMENDATION.value,
         description="The primary identified marine intent."
     )
-    secondary_intents: List[MarineIntent] = Field(
+    secondary_intents: List[str] = Field(
         default_factory=list,
         description="Secondary or supplementary intents detected in the query."
     )
     confidence: float = Field(
         default=1.0,
-        ge=0.0,
-        le=1.0,
         description="Confidence score of the primary classification (0.0 - 1.0)."
     )
     reasoning: Optional[str] = Field(

@@ -5,20 +5,21 @@ from typing import Any, Dict, List
 from backend.agents.interfaces.p4_tools import get_p4_provider
 from backend.agents.interfaces.p6_analytics import get_p6_provider
 from backend.agents.schemas.plan import ToolExecutionTarget
-from backend.agents.state.agent_state import AgentState
+from backend.agents.state.marine_state import MarineState
 
 
-async def executor_node(state: AgentState) -> Dict[str, Any]:
+async def executor_node(state: MarineState) -> Dict[str, Any]:
     """
     LangGraph node: Safely dispatches plan steps to P4 tool integrations and P6 analytics modules.
     Maintains isolation by delegating via the abstract interface protocols.
     """
     plan = state.get("execution_plan")
+    steps = state.get("execution_steps") or (plan.steps if plan else [])
     errors = list(state.get("errors", []))
     tool_results: List[Dict[str, Any]] = list(state.get("tool_results", []))
     analytics_results: List[Dict[str, Any]] = list(state.get("analytics_results", []))
 
-    if not plan or not plan.steps:
+    if not steps:
         return {"tool_results": tool_results, "analytics_results": analytics_results}
 
     p4_provider = get_p4_provider()
@@ -27,7 +28,7 @@ async def executor_node(state: AgentState) -> Dict[str, Any]:
     # Step-by-step intermediate cache
     step_outputs: Dict[str, Any] = {}
 
-    for step in plan.steps:
+    for step in steps:
         try:
             if step.target == ToolExecutionTarget.P4_EXTERNAL_TOOL:
                 op = step.operation_name
@@ -67,7 +68,6 @@ async def executor_node(state: AgentState) -> Dict[str, Any]:
                 params = step.parameters
 
                 if op == "calculate_sea_state_risk":
-                    # Inject weather data output from prerequisite step if available
                     weather_data = step_outputs.get("step_weather", {})
                     res = await p6_provider.calculate_sea_state_risk(
                         weather_data=weather_data,
@@ -100,9 +100,6 @@ async def executor_node(state: AgentState) -> Dict[str, Any]:
         except Exception as e:
             err_msg = f"Execution error in {step.step_id} ({step.operation_name}): {str(e)}"
             errors.append(err_msg)
-            if step.is_required:
-                # Continue loop to collect whatever else succeeds or allow fallback
-                pass
 
     return {
         "tool_results": tool_results,

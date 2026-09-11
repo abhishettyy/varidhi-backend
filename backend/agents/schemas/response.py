@@ -1,9 +1,13 @@
 """Response schemas tailored for Marine Intelligence personas and frontend consumers."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 from backend.agents.schemas.base import BaseModel, Field
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class RoleType(str, Enum):
@@ -34,7 +38,7 @@ class SafetyAlert(BaseModel):
         ...,
         description="Actionable directive (e.g., 'Safe for small crafts', 'Avoid venturing past 15 NM')."
     )
-    issued_at: datetime = Field(default_factory=datetime.utcnow)
+    issued_at: datetime = Field(default_factory=_utc_now)
 
 
 class VisualPayload(BaseModel):

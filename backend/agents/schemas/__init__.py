@@ -1,6 +1,15 @@
 """Schemas package for marine agent orchestration."""
 
-from .intent import MarineIntent, IntentClassificationResult
+from .intent import (
+    MarineIntent,
+    MarineVariable,
+    StructuredLocation,
+    StructuredTimeRange,
+    StructuredVessel,
+    StructuredRoute,
+    QueryIntent,
+    IntentClassificationResult,
+)
 from .location_time import (
     Coordinates,
     BoundingBox,
@@ -14,11 +23,18 @@ from .response import (
     RoleType,
     SafetySeverity,
     SafetyAlert,
+    VisualPayload,
     AgentResponse,
 )
 
 __all__ = [
     "MarineIntent",
+    "MarineVariable",
+    "StructuredLocation",
+    "StructuredTimeRange",
+    "StructuredVessel",
+    "StructuredRoute",
+    "QueryIntent",
     "IntentClassificationResult",
     "Coordinates",
     "BoundingBox",
@@ -34,5 +50,6 @@ __all__ = [
     "RoleType",
     "SafetySeverity",
     "SafetyAlert",
+    "VisualPayload",
     "AgentResponse",
 ]

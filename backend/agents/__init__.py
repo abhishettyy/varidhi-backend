@@ -14,7 +14,16 @@ from .graph.workflow import (
     run_minimal_marine_graph_async,
 )
 from .state.marine_state import MarineState, AgentState
-from .schemas.intent import MarineIntent, IntentClassificationResult
+from .schemas.intent import (
+    MarineIntent,
+    MarineVariable,
+    StructuredLocation,
+    StructuredTimeRange,
+    StructuredVessel,
+    StructuredRoute,
+    QueryIntent,
+    IntentClassificationResult,
+)
 from .schemas.location_time import Coordinates, BoundingBox, SpatialContext, TemporalContext, SpatioTemporalContext
 from .schemas.plan import PlanStep, ExecutionPlan, ToolExecutionTarget
 from .schemas.evidence import EvidenceItem, EvidenceBundle, EvidenceType
@@ -54,6 +63,12 @@ __all__ = [
     "planner_node",
     # Schemas
     "MarineIntent",
+    "MarineVariable",
+    "StructuredLocation",
+    "StructuredTimeRange",
+    "StructuredVessel",
+    "StructuredRoute",
+    "QueryIntent",
     "IntentClassificationResult",
     "Coordinates",
     "BoundingBox",

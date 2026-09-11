@@ -38,8 +38,12 @@ class TestMarineGraphExecution(unittest.TestCase):
         self.assertEqual(location.get("harbor"), "Mangalore Old Port")
         self.assertEqual(location.get("region"), "Karnataka Coast")
 
-        # 4. Verify Time Range
-        self.assertEqual(final_state.get("time_range"), "tomorrow morning")
+        # 4. Verify Structured Time Range
+        time_range = final_state.get("time_range")
+        self.assertIsInstance(time_range, dict)
+        self.assertEqual(time_range.get("raw"), "tomorrow morning")
+        self.assertEqual(time_range.get("relative_day"), "tomorrow")
+        self.assertEqual(time_range.get("period"), "morning")
 
         # 5. Verify Plan
         plan = final_state.get("plan")
@@ -59,9 +63,11 @@ class TestMarineGraphExecution(unittest.TestCase):
         query = "How rough are the waves and wind near Chennai today evening?"
         final_state = run_minimal_marine_graph(query, user_type="maritime_operator")
 
-        self.assertEqual(final_state.get("intent"), MarineIntent.WEATHER_SAFETY.value)
+        self.assertEqual(final_state.get("intent"), MarineIntent.WEATHER_QUERY.value)
         self.assertEqual(final_state.get("location").get("name"), "Chennai")
-        self.assertEqual(final_state.get("time_range"), "today evening")
+        self.assertEqual(final_state.get("time_range").get("raw"), "today evening")
+        self.assertEqual(final_state.get("time_range").get("relative_day"), "today")
+        self.assertEqual(final_state.get("time_range").get("period"), "evening")
         self.assertIn("waves", final_state.get("plan"))
         self.assertIn("wind", final_state.get("plan"))
 

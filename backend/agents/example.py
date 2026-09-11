@@ -18,13 +18,15 @@ def main():
     state: MarineState = run_minimal_marine_graph(query, user_type="fisherman")
 
     print("=== RESULTING MARINE STATE ===")
-    print(f"• Query:      {state.get('query')}")
-    print(f"• User Type:  {state.get('user_type')}")
-    print(f"• Intent:     {state.get('intent')}")
-    print(f"• Location:   {json.dumps(state.get('location'), indent=2)}")
-    print(f"• Time Range: {state.get('time_range')}")
-    print(f"• Plan:       {state.get('plan')}")
-    print(f"• Errors:     {state.get('errors')}")
+    print(f"• Query:        {state.get('query')}")
+    print(f"• User Type:    {state.get('user_type')}")
+    print(f"• Intent:       {state.get('intent')} (Confidence: {state.get('confidence')})")
+    print(f"• Location:     {json.dumps(state.get('location'), indent=2)}")
+    print(f"• Time Range:   {json.dumps(state.get('time_range'), indent=2)}")
+    print(f"• Variables:    {state.get('variables')}")
+    print(f"• Plan:         {state.get('plan')}")
+    print(f"• Query Intent: {json.dumps(state.get('query_intent'), indent=2)}")
+    print(f"• Errors:       {state.get('errors')}")
 
 
 if __name__ == "__main__":

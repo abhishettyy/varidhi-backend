@@ -35,8 +35,12 @@ class TestMarineNodes(unittest.TestCase):
         self.assertAlmostEqual(location.get("longitude"), 74.8427, places=3)
         self.assertEqual(location.get("harbor"), "Mangalore Old Port")
 
-        # Check Time Range
-        self.assertEqual(result["time_range"], "tomorrow morning")
+        # Check Structured Time Range
+        time_range = result["time_range"]
+        self.assertIsInstance(time_range, dict)
+        self.assertEqual(time_range.get("raw"), "tomorrow morning")
+        self.assertEqual(time_range.get("relative_day"), "tomorrow")
+        self.assertEqual(time_range.get("period"), "morning")
 
     def test_understand_query_weather_safety(self):
         """Verify weather intent extraction and time parsing."""
@@ -47,9 +51,11 @@ class TestMarineNodes(unittest.TestCase):
         }
 
         result = asyncio.run(understand_query_node(state))
-        self.assertEqual(result["intent"], MarineIntent.WEATHER_SAFETY.value)
+        self.assertEqual(result["intent"], MarineIntent.WEATHER_QUERY.value)
         self.assertEqual(result["location"].get("name"), "Kochi")
-        self.assertEqual(result["time_range"], "today afternoon")
+        self.assertEqual(result["time_range"].get("raw"), "today afternoon")
+        self.assertEqual(result["time_range"].get("relative_day"), "today")
+        self.assertEqual(result["time_range"].get("period"), "afternoon")
 
     def test_understand_query_coordinates(self):
         """Verify explicit coordinate extraction."""
@@ -63,7 +69,8 @@ class TestMarineNodes(unittest.TestCase):
         self.assertEqual(result["intent"], MarineIntent.FISHING_RECOMMENDATION.value)
         self.assertAlmostEqual(result["location"].get("latitude"), 15.30, places=2)
         self.assertAlmostEqual(result["location"].get("longitude"), 73.80, places=2)
-        self.assertEqual(result["time_range"], "this weekend")
+        self.assertEqual(result["time_range"].get("raw"), "this weekend")
+        self.assertEqual(result["time_range"].get("relative_day"), "this weekend")
 
     def test_planner_fishing_recommendation(self):
         """Verify planner output contains PFZ, SST, weather, waves, tide, restrictions for fishing."""
@@ -71,7 +78,7 @@ class TestMarineNodes(unittest.TestCase):
             "query": "Where should I fish tomorrow?",
             "intent": MarineIntent.FISHING_RECOMMENDATION.value,
             "location": {"name": "Mangalore", "latitude": 12.8681, "longitude": 74.8427},
-            "time_range": "tomorrow morning",
+            "time_range": {"raw": "tomorrow morning", "relative_day": "tomorrow", "period": "morning"},
             "user_type": "fisherman",
         }
 
@@ -90,9 +97,9 @@ class TestMarineNodes(unittest.TestCase):
         """Verify planner output for sea state & weather safety queries."""
         state: MarineState = {
             "query": "Is it safe to go out to sea?",
-            "intent": MarineIntent.WEATHER_SAFETY.value,
+            "intent": MarineIntent.MARINE_SAFETY.value,
             "location": {"name": "Veraval", "latitude": 20.9077, "longitude": 70.3678},
-            "time_range": "next 24 hours",
+            "time_range": {"raw": "next 24 hours", "relative_day": "today", "period": "all-day"},
             "user_type": "maritime_operator",
         }
 

@@ -68,17 +68,14 @@ export const AuthorityWorkspace: React.FC = () => {
       <AuthorityHeader activeAlertsCount={3} />
 
       {/* 2. Body Split: Regional Operations Panel + Regional Marine Map */}
-      <div style={{ flex: 1, display: 'flex', position: 'relative', overflow: 'hidden' }}>
+      <div className="workspace-body">
         {/* Left Side: Operations Center Panel */}
         <aside
+          className="workspace-aside"
           style={{
             width: '450px',
-            maxWidth: '100%',
-            height: '100%',
             backgroundColor: '#f6f3f1',
             borderRight: '1px solid #cecac8',
-            display: 'flex',
-            flexDirection: 'column',
             zIndex: 10,
           }}
         >
@@ -190,7 +187,7 @@ export const AuthorityWorkspace: React.FC = () => {
         </aside>
 
         {/* Right Side: Map Canvas */}
-        <main style={{ flex: 1, position: 'relative', height: '100%' }}>
+        <main className="workspace-main">
           <AuthorityMap
             zones={zones}
             userLocation={userLocation}

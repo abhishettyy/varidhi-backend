@@ -15,7 +15,7 @@ import { MapHud } from '@/components/console/MapHud';
 import { SpotCard } from '@/components/console/SpotCard';
 import type { Conditions, MapApi, SpotEvent } from '@/components/console/types';
 import { OVERLAYS } from '@/lib/marine/data';
-import { compass, sampleField, seaState } from '@/lib/marine/field';
+import { coastLon, compass, sampleField, seaState } from '@/lib/marine/field';
 import type { FieldKey, LatLon, MarkerKey } from '@/lib/marine/types';
 import { FISHERMAN_QUICK_PROMPTS } from '@/services/api/chatApi';
 import { fetchFishingZones } from '@/services/api/marineApi';
@@ -55,6 +55,28 @@ const MarineMapLeaflet = dynamic(() => import('@/components/map/MarineMapLeaflet
     </div>
   ),
 });
+
+/* A believable outbound track: boats leave the fairway heading seaward and
+   then curve onto their bearing, so a dead-straight line looks wrong. This is
+   a quadratic Bézier bowed to the west, with every point held offshore of the
+   shoreline. */
+function curvedVoyage(from: LatLon, to: LatLon, steps = 56): [number, number][] {
+  const dx = to.lon - from.lon;
+  const dy = to.lat - from.lat;
+  const leg = Math.hypot(dx, dy);
+  const cLon = (from.lon + to.lon) / 2 - leg * 0.34; // bow out to sea
+  const cLat = (from.lat + to.lat) / 2 + dy * 0.06;
+  const pts: [number, number][] = [];
+  for (let i = 0; i <= steps; i++) {
+    const u = i / steps;
+    const k = 1 - u;
+    const lat = k * k * from.lat + 2 * k * u * cLat + u * u * to.lat;
+    const lon = k * k * from.lon + 2 * k * u * cLon + u * u * to.lon;
+    // never let the track cut across the beach
+    pts.push([Math.min(lon, coastLon(lat) - 0.004), lat]);
+  }
+  return pts;
+}
 
 export const FishermanWorkspace: React.FC = () => {
   const [zones, setZones] = useState<FishingZone[]>(() => getMockZones());
@@ -151,6 +173,33 @@ export const FishermanWorkspace: React.FC = () => {
     [t]
   );
 
+  /* COMMENCE VOYAGE — plot the outbound track to the recommended ground and
+     drop it on the chart. */
+  const handleCommenceVoyage = useCallback(() => {
+    if (!recommendedZone?.coordinates) return;
+    const [zLon, zLat] = recommendedZone.coordinates;
+    const track = curvedVoyage(home, { lat: zLat, lon: zLon });
+    setFeatures({
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          geometry: { type: 'LineString', coordinates: track },
+          properties: {
+            kind: 'route',
+            label: `Outbound track · ${recommendedZone.distance_km} km ${recommendedZone.bearing} · ${Math.round((recommendedZone.distance_km / 18.52) * 60)} min at 10 kn`,
+          },
+        },
+        {
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [zLon, zLat] },
+          properties: { kind: 'ground', label: recommendedZone.name },
+        },
+      ],
+    });
+    setSelectedZone(recommendedZone);
+  }, [recommendedZone, home]);
+
   const handleAskSpotConditions = useCallback(() => {
     if (!spot) return;
     const query = `What are the marine conditions and safety assessment at coordinates ${spot.lat.toFixed(3)}°N, ${spot.lon.toFixed(3)}°E? Is it safe to fish there today?`;
@@ -179,17 +228,14 @@ export const FishermanWorkspace: React.FC = () => {
       />
 
       {/* 2. Workspace Body: Map + Action Sidebar */}
-      <div style={{ flex: 1, display: 'flex', position: 'relative', overflow: 'hidden' }}>
+      <div className="workspace-body">
         {/* Left Side: Fisherman Action Panel */}
         <aside
+          className="workspace-aside"
           style={{
             width: '440px',
-            maxWidth: '100%',
-            height: '100%',
             backgroundColor: '#f6f3f1',
             borderRight: '1px solid #cecac8',
-            display: 'flex',
-            flexDirection: 'column',
             zIndex: 10,
           }}
         >
@@ -247,7 +293,7 @@ export const FishermanWorkspace: React.FC = () => {
                 <RecommendationCard
                   zone={recommendedZone}
                   onWhyThisZone={() => setShowWhyModal(true)}
-                  onNavigate={() => alert(`Navigating to ${recommendedZone.name}`)}
+                  onNavigate={handleCommenceVoyage}
                 />
 
                 {/* Why Modal */}
@@ -343,7 +389,7 @@ export const FishermanWorkspace: React.FC = () => {
         </aside>
 
         {/* Right Side: Leaflet + Canvas Flow Map */}
-        <main style={{ flex: 1, position: 'relative', height: '100%', overflow: 'hidden' }}>
+        <main className="workspace-main">
           {/* 1. Core Interactive Leaflet Map */}
           <MarineMapLeaflet
             overlay={overlay}

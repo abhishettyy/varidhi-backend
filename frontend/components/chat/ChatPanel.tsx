@@ -65,13 +65,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     }
   }, [messages, isLoading]);
 
-  useEffect(() => {
-    if (pendingQuery && !isLoading) {
-      handleSendMessage(pendingQuery);
-      if (onClearPendingQuery) onClearPendingQuery();
-    }
-  }, [pendingQuery]);
-
   const handleSendMessage = async (text: string) => {
     const userMsg: ChatMessageItem = {
       id: `usr_${Date.now()}`,
@@ -119,6 +112,20 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
       setIsLoading(false);
     }
   };
+
+  /* A query handed over from the map or the spot card. Two things matter here:
+     this must sit after handleSendMessage (as a const it is in the temporal
+     dead zone until this line, so an effect above would throw), and the send
+     is deferred a tick so the effect body itself never calls setState. */
+  useEffect(() => {
+    if (!pendingQuery || isLoading) return;
+    const id = setTimeout(() => {
+      handleSendMessage(pendingQuery);
+      if (onClearPendingQuery) onClearPendingQuery();
+    }, 0);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingQuery]);
 
   return (
     <div

@@ -179,13 +179,14 @@ export default function MarineMapLeaflet(props: MarineMapProps) {
   useEffect(() => {
     const el = elRef.current!;
     const p = propsRef.current;
-    const initialCenter: [number, number] = [p.home.lat, p.home.lon];
+    /* Fit the whole operating area — port, zones, cyclone track — instead of
+       dropping a fixed zoom on the boat, which left the map part-covered. */
     const map = L.map(el, {
       zoomControl: false,
       attributionControl: true,
-      minZoom: 8,
+      minZoom: 7,
       maxZoom: 14,
-    }).setView(initialCenter, 10);
+    }).fitBounds(MAP_BOUNDS, { padding: [26, 26] });
     mapRef.current = map;
 
     L.tileLayer(BASE_URL, { maxZoom: 16, attribution: "Esri, GEBCO, Garmin &copy; OpenStreetMap" }).addTo(map);

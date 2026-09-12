@@ -74,6 +74,9 @@ class RawOpportunityFeatures(BaseModel):
     species: Optional[List[str]] = Field(
         default=None, description="Likely target pelagic/demersal species"
     )
+    bearing: Optional[str] = Field(
+        default=None, description="Bearing cardinal direction from reference harbor"
+    )
     latitude: Optional[float] = Field(
         default=None, description="Centroid latitude in decimal degrees"
     )
@@ -756,13 +759,24 @@ class CandidateZoneEvaluation(BaseModel):
     )
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        raw_meta = self.raw_metadata or {}
+        raw_f = raw_meta.get("raw_features", {}) if isinstance(raw_meta, dict) else {}
+        if not isinstance(raw_f, dict):
+            raw_f = {}
+
+        lat = raw_f.get("latitude") or raw_f.get("lat") or (raw_meta.get("latitude") or raw_meta.get("lat") if isinstance(raw_meta, dict) else None)
+        lon = raw_f.get("longitude") or raw_f.get("lon") or (raw_meta.get("longitude") or raw_meta.get("lon") if isinstance(raw_meta, dict) else None)
+        bearing = raw_f.get("bearing") or (raw_meta.get("bearing") if isinstance(raw_meta, dict) else None)
+        species = raw_f.get("species") or (raw_meta.get("species") if isinstance(raw_meta, dict) else [])
+        dist = self.distance_nm or raw_f.get("distance_nm") or (raw_meta.get("distance_nm") if isinstance(raw_meta, dict) else None)
+
+        d = {
             "zone_id": self.zone_id,
             "opportunity_score": self.opportunity_score,
             "risk_score": self.risk_score,
             "risk_severity": self.risk_severity,
             "regulatory_status": self.regulatory_status,
-            "distance_nm": self.distance_nm,
+            "distance_nm": dist,
             "eligible": self.eligible,
             "status": self.status,
             "is_legal": self.regulatory_status == ComplianceStatus.ELIGIBLE.value,
@@ -775,6 +789,17 @@ class CandidateZoneEvaluation(BaseModel):
             "weights_used": self.weights_used,
             "raw_metadata": self.raw_metadata,
         }
+        if lat is not None:
+            d["lat"] = lat
+            d["latitude"] = lat
+        if lon is not None:
+            d["lon"] = lon
+            d["longitude"] = lon
+        if bearing is not None:
+            d["bearing"] = bearing
+        if species:
+            d["species"] = species
+        return d
 
 
 class DecisionResult(BaseModel):

@@ -274,6 +274,137 @@ class TestPhase8FastAPIContract(unittest.TestCase):
         self.assertIn("zones", zones_data)
         self.assertGreaterEqual(len(zones_data["zones"]), 3)
 
+    # =========================================================================
+    # 9. CANONICAL SCENARIO FIXTURE CONSISTENCY REGRESSION
+    # =========================================================================
+
+    def test_11_canonical_mangalore_fixture_consistency_regression(self):
+        """
+        Verifies exact 1-to-1 consistency between the canonical Mangalore fixture
+        and API serialization across:
+        - decision
+        - zones[]
+        - visual_payload.map_features_geojson
+        """
+        payload = {
+            "query": "I'm near Mangalore. Where should I fish tomorrow morning?",
+            "role": "fisherman",
+        }
+        response = self.client.post("/chat", json=payload)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+
+        # 1. Canonical Expected Dictionary (Single Source of Truth)
+        CANONICAL_ZONES = {
+            "ZONE_A": {
+                "latitude": 12.95,
+                "longitude": 74.80,
+                "distance_nm": 14.5,
+                "bearing": "WNW",
+                "opportunity_score": 76.6,
+                "risk_score": 75.2,
+                "regulatory_status": "ELIGIBLE",
+                "status": "REJECTED_RISK",
+                "ranking_score": None,
+                "species": ["Pelagic Tuna", "Kingfish"],
+            },
+            "ZONE_B": {
+                "latitude": 12.90,
+                "longitude": 74.95,
+                "distance_nm": 8.2,
+                "bearing": "SSW",
+                "opportunity_score": 66.9,
+                "risk_score": 34.9,
+                "regulatory_status": "ELIGIBLE",
+                "status": "SELECTED",
+                "ranking_score": 67.31,
+                "species": ["Mackerel", "Sardines"],
+            },
+            "ZONE_C": {
+                "latitude": 12.82,
+                "longitude": 75.05,
+                "distance_nm": 18.0,
+                "bearing": "SSE",
+                "opportunity_score": 84.5,
+                "risk_score": 30.8,
+                "regulatory_status": "BLOCKED",
+                "status": "REJECTED_LEGAL",
+                "ranking_score": None,
+                "species": ["Yellowfin Tuna", "Barracuda"],
+            },
+        }
+
+        # 2. Verify zones[] array consistency
+        zones_list = data.get("zones", [])
+        self.assertEqual(len(zones_list), 3, "Must return exactly 3 evaluated scenario zones")
+        zone_map = {z["zone_id"]: z for z in zones_list}
+
+        for zid, exp in CANONICAL_ZONES.items():
+            self.assertIn(zid, zone_map, f"Missing candidate zone {zid}")
+            act = zone_map[zid]
+
+            # Coordinates
+            self.assertAlmostEqual(act["latitude"], exp["latitude"], places=2, msg=f"{zid} latitude mismatch")
+            self.assertAlmostEqual(act["longitude"], exp["longitude"], places=2, msg=f"{zid} longitude mismatch")
+
+            # Distance & Bearing
+            self.assertAlmostEqual(act["distance_nm"], exp["distance_nm"], places=1, msg=f"{zid} distance mismatch")
+            self.assertEqual(act["bearing"], exp["bearing"], f"{zid} bearing mismatch")
+
+            # Opportunity & Risk Scores
+            self.assertAlmostEqual(act["opportunity_score"], exp["opportunity_score"], places=1, msg=f"{zid} opp score mismatch")
+            self.assertAlmostEqual(act["risk_score"], exp["risk_score"], places=1, msg=f"{zid} risk score mismatch")
+
+            # Regulatory & Decision Status
+            self.assertEqual(act["regulatory_status"], exp["regulatory_status"], f"{zid} regulatory status mismatch")
+            self.assertEqual(act["status"], exp["status"], f"{zid} decision status mismatch")
+
+            # Ranking Score
+            if exp["ranking_score"] is not None:
+                self.assertAlmostEqual(act["ranking_score"], exp["ranking_score"], places=1, msg=f"{zid} ranking score mismatch")
+            else:
+                self.assertIsNone(act["ranking_score"], f"{zid} must have null ranking score")
+
+            # Species
+            for sp in exp["species"]:
+                self.assertIn(sp, act["species"], f"{zid} species missing {sp}")
+
+        # 3. Verify decision object consistency with Zone B
+        decision = data["decision"]
+        self.assertEqual(decision["selected_zone_id"], "ZONE_B")
+        self.assertEqual(decision["status"], "SELECTED")
+        self.assertAlmostEqual(decision["latitude"], 12.90, places=2)
+        self.assertAlmostEqual(decision["longitude"], 74.95, places=2)
+        self.assertAlmostEqual(decision["distance_nm"], 8.2, places=1)
+        self.assertEqual(decision["bearing"], "SSW")
+        self.assertAlmostEqual(decision["opportunity_score"], 66.9, places=1)
+        self.assertAlmostEqual(decision["risk_score"], 34.9, places=1)
+        self.assertAlmostEqual(decision["ranking_score"], 67.31, places=1)
+        self.assertEqual(decision["regulatory_status"], "ELIGIBLE")
+
+        # 4. Verify visual_payload.map_features_geojson consistency
+        geojson = data["visual_payload"]["map_features_geojson"]
+        self.assertIsNotNone(geojson)
+        self.assertEqual(geojson["type"], "FeatureCollection")
+        features = geojson["features"]
+        self.assertEqual(len(features), 3)
+
+        feat_map = {f["properties"]["zone_id"]: f for f in features}
+        for zid, exp in CANONICAL_ZONES.items():
+            self.assertIn(zid, feat_map, f"GeoJSON missing feature {zid}")
+            f = feat_map[zid]
+            coords = f["geometry"]["coordinates"]
+            # GeoJSON coordinates are [longitude, latitude]
+            self.assertAlmostEqual(coords[0], exp["longitude"], places=2, msg=f"{zid} GeoJSON lon mismatch")
+            self.assertAlmostEqual(coords[1], exp["latitude"], places=2, msg=f"{zid} GeoJSON lat mismatch")
+
+            props = f["properties"]
+            self.assertEqual(props["status"], exp["status"])
+            self.assertEqual(props["recommended"], (zid == "ZONE_B"))
+            self.assertAlmostEqual(props["opportunity_score"], exp["opportunity_score"], places=1)
+            self.assertAlmostEqual(props["risk_score"], exp["risk_score"], places=1)
+            self.assertAlmostEqual(props["distance_nm"], exp["distance_nm"], places=1)
+
 
 if __name__ == "__main__":
     unittest.main()

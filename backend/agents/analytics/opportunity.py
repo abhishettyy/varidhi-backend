@@ -245,6 +245,7 @@ def calculate_zone_opportunity(
             distance_nm=raw_features.get("distance_nm") or raw_features.get("distance"),
             depth_m=raw_features.get("depth_m"),
             species=raw_features.get("species"),
+            bearing=raw_features.get("bearing"),
             latitude=raw_features.get("latitude") or raw_features.get("lat"),
             longitude=raw_features.get("longitude") or raw_features.get("lon"),
         )

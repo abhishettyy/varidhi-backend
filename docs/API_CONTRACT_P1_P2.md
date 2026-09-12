@@ -82,16 +82,35 @@ Executes the LangGraph agent workflow and returns multi-criteria decision analyt
     "distance_nm": 8.2,
     "bearing": "SSW",
     "species": ["Mackerel", "Sardines"],
-    "latitude": 12.82,
-    "longitude": 74.75,
+    "latitude": 12.90,
+    "longitude": 74.95,
     "reasons": [
-      "Top-ranked eligible candidate with balanced opportunity and moderate sea risk."
+      "Regulatory eligibility confirmed",
+      "Marine risk score 34.9 is within project decision threshold 50.0",
+      "Calculated heuristic ranking score: 67.3",
+      "Highest ranking among eligible candidates"
     ],
     "safety_level": "caution_yellow",
     "action_advice": "Favorable relative to evaluated alternatives. Maintain standard maritime vigilance."
   },
 
   "zones": [
+    {
+      "zone_id": "ZONE_A",
+      "status": "REJECTED_RISK",
+      "opportunity_score": 76.6,
+      "risk_score": 75.2,
+      "regulatory_status": "ELIGIBLE",
+      "ranking_score": null,
+      "distance_nm": 14.5,
+      "bearing": "WNW",
+      "species": ["Pelagic Tuna", "Kingfish"],
+      "latitude": 12.95,
+      "longitude": 74.80,
+      "reasons": [
+        "Marine risk score 75.2 exceeds project decision threshold 50.0."
+      ]
+    },
     {
       "zone_id": "ZONE_B",
       "status": "SELECTED",
@@ -102,24 +121,13 @@ Executes the LangGraph agent workflow and returns multi-criteria decision analyt
       "distance_nm": 8.2,
       "bearing": "SSW",
       "species": ["Mackerel", "Sardines"],
-      "latitude": 12.82,
-      "longitude": 74.75,
-      "reasons": []
-    },
-    {
-      "zone_id": "ZONE_A",
-      "status": "REJECTED_RISK",
-      "opportunity_score": 76.6,
-      "risk_score": 75.2,
-      "regulatory_status": "ELIGIBLE",
-      "ranking_score": null,
-      "distance_nm": 14.5,
-      "bearing": "WNW",
-      "species": ["Kingfish"],
-      "latitude": 12.95,
-      "longitude": 74.65,
+      "latitude": 12.90,
+      "longitude": 74.95,
       "reasons": [
-        "Marine risk score 75.2 exceeds project decision threshold 50.0."
+        "Regulatory eligibility confirmed",
+        "Marine risk score 34.9 is within project decision threshold 50.0",
+        "Calculated heuristic ranking score: 67.3",
+        "Highest ranking among eligible candidates"
       ]
     },
     {
@@ -129,13 +137,13 @@ Executes the LangGraph agent workflow and returns multi-criteria decision analyt
       "risk_score": 30.8,
       "regulatory_status": "BLOCKED",
       "ranking_score": null,
-      "distance_nm": 22.0,
-      "bearing": "SW",
-      "species": ["Squid", "Pomfret"],
-      "latitude": 12.70,
-      "longitude": 74.55,
+      "distance_nm": 18.0,
+      "bearing": "SSE",
+      "species": ["Yellowfin Tuna", "Barracuda"],
+      "latitude": 12.82,
+      "longitude": 75.05,
       "reasons": [
-        "HARD BLOCK: Netravati Marine Ecological Sanctuary & Port Approach (MPA) - Sensitive estuarine breeding sanctuary. Fishing strictly prohibited under State Gazette."
+        "HARD BLOCK: Netravati Marine Ecological Sanctuary & Port Approach (MPA) - Sensitive estuarine coral/mangrove breeding sanctuary and naval security approach. Fishing strictly prohibited under State Gazette."
       ]
     }
   ],
@@ -153,7 +161,7 @@ Executes the LangGraph agent workflow and returns multi-criteria decision analyt
       "confidence": 1.0,
       "spatial_tag": "Mangalore",
       "timestamp": "2026-09-12T02:30:00Z",
-      "raw_payload": { ... }
+      "raw_payload": { }
     }
   ],
 
@@ -163,11 +171,12 @@ Executes the LangGraph agent workflow and returns multi-criteria decision analyt
       "features": [
         {
           "type": "Feature",
-          "geometry": { "type": "Point", "coordinates": [74.75, 12.82] },
+          "geometry": { "type": "Point", "coordinates": [74.95, 12.90] },
           "properties": {
             "zone_id": "ZONE_B",
             "status": "SELECTED",
             "recommended": true,
+            "ranking_score": 67.31,
             "opportunity_score": 66.9,
             "risk_score": 34.9,
             "distance_nm": 8.2,
@@ -176,12 +185,34 @@ Executes the LangGraph agent workflow and returns multi-criteria decision analyt
         },
         {
           "type": "Feature",
-          "geometry": { "type": "Point", "coordinates": [74.65, 12.95] },
+          "geometry": { "type": "Point", "coordinates": [74.80, 12.95] },
           "properties": {
             "zone_id": "ZONE_A",
             "status": "REJECTED_RISK",
             "recommended": false,
-            "reasons": ["Marine risk score 75.2 exceeds project decision threshold 50.0."]
+            "rejection_codes": ["REJECTED_RISK"],
+            "reasons": ["Marine risk score 75.2 exceeds project decision threshold 50.0."],
+            "opportunity_score": 76.6,
+            "risk_score": 75.2,
+            "distance_nm": 14.5,
+            "species": ["Pelagic Tuna", "Kingfish"]
+          }
+        },
+        {
+          "type": "Feature",
+          "geometry": { "type": "Point", "coordinates": [75.05, 12.82] },
+          "properties": {
+            "zone_id": "ZONE_C",
+            "status": "REJECTED_LEGAL",
+            "recommended": false,
+            "rejection_codes": ["REJECTED_LEGAL"],
+            "reasons": [
+              "HARD BLOCK: Netravati Marine Ecological Sanctuary & Port Approach (MPA) - Sensitive estuarine coral/mangrove breeding sanctuary and naval security approach. Fishing strictly prohibited under State Gazette."
+            ],
+            "opportunity_score": 84.5,
+            "risk_score": 30.8,
+            "distance_nm": 18.0,
+            "species": ["Yellowfin Tuna", "Barracuda"]
           }
         }
       ]

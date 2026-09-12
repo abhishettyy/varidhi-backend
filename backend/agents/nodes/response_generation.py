@@ -357,39 +357,69 @@ async def response_generation_node(state: MarineState) -> Dict[str, Any]:
             )
             key_recommendations.append(safety_alert.action_advice)
 
+    # Canonical fallback coordinates for standard scenario zones
+    CANONICAL_ZONE_COORDS = {
+        "ZONE_A": (12.95, 74.80),
+        "ZONE_B": (12.90, 74.95),
+        "ZONE_C": (12.82, 75.05),
+    }
+
     # Build Visual Payload for Frontend
     geojson_features = []
     if selected_zone:
-        lat = selected_zone.get("lat") or selected_zone.get("latitude", 12.90)
-        lon = selected_zone.get("lon") or selected_zone.get("longitude", 74.95)
+        zid = selected_zone.get("zone_id")
+        raw_meta = selected_zone.get("raw_metadata") or {}
+        raw_f = raw_meta.get("raw_features", {}) if isinstance(raw_meta, dict) else {}
+        lat = selected_zone.get("latitude") or selected_zone.get("lat") or (raw_f.get("latitude") or raw_f.get("lat") if isinstance(raw_f, dict) else None)
+        lon = selected_zone.get("longitude") or selected_zone.get("lon") or (raw_f.get("longitude") or raw_f.get("lon") if isinstance(raw_f, dict) else None)
+        if (lat is None or lon is None) and zid in CANONICAL_ZONE_COORDS:
+            lat, lon = CANONICAL_ZONE_COORDS[zid]
+        if lat is None:
+            lat = location.get("latitude", 12.90) if isinstance(location, dict) else 12.90
+        if lon is None:
+            lon = location.get("longitude", 74.95) if isinstance(location, dict) else 74.95
+
+        species = selected_zone.get("species") or (raw_f.get("species") if isinstance(raw_f, dict) else [])
         geojson_features.append({
             "type": "Feature",
             "geometry": {"type": "Point", "coordinates": [lon, lat]},
             "properties": {
-                "zone_id": selected_zone.get("zone_id"),
+                "zone_id": zid,
                 "status": "SELECTED",
                 "recommended": True,
                 "ranking_score": selected_zone.get("ranking_score"),
                 "opportunity_score": selected_zone.get("opportunity_score"),
                 "risk_score": selected_zone.get("risk_score"),
                 "distance_nm": selected_zone.get("distance_nm"),
-                "species": selected_zone.get("species"),
+                "species": species,
             }
         })
     for rz in rejected_zones:
-        lat = rz.get("lat") or rz.get("latitude", 12.82)
-        lon = rz.get("lon") or rz.get("longitude", 75.05)
-        geojson_features.append({
-            "type": "Feature",
-            "geometry": {"type": "Point", "coordinates": [lon, lat]},
-            "properties": {
-                "zone_id": rz.get("zone_id"),
-                "status": rz.get("status"),
-                "recommended": False,
-                "rejection_codes": rz.get("rejection_codes"),
-                "reasons": rz.get("reasons"),
-            }
-        })
+        zid = rz.get("zone_id")
+        raw_meta = rz.get("raw_metadata") or {}
+        raw_f = raw_meta.get("raw_features", {}) if isinstance(raw_meta, dict) else {}
+        lat = rz.get("latitude") or rz.get("lat") or (raw_f.get("latitude") or raw_f.get("lat") if isinstance(raw_f, dict) else None)
+        lon = rz.get("longitude") or rz.get("lon") or (raw_f.get("longitude") or raw_f.get("lon") if isinstance(raw_f, dict) else None)
+        if (lat is None or lon is None) and zid in CANONICAL_ZONE_COORDS:
+            lat, lon = CANONICAL_ZONE_COORDS[zid]
+
+        species = rz.get("species") or (raw_f.get("species") if isinstance(raw_f, dict) else [])
+        if lat is not None and lon is not None:
+            geojson_features.append({
+                "type": "Feature",
+                "geometry": {"type": "Point", "coordinates": [lon, lat]},
+                "properties": {
+                    "zone_id": zid,
+                    "status": rz.get("status"),
+                    "recommended": False,
+                    "rejection_codes": rz.get("rejection_codes"),
+                    "reasons": rz.get("reasons"),
+                    "opportunity_score": rz.get("opportunity_score"),
+                    "risk_score": rz.get("risk_score"),
+                    "distance_nm": rz.get("distance_nm"),
+                    "species": species,
+                }
+            })
     if not geojson_features and hotspots:
         for hs in hotspots:
             lat = hs.get("latitude", 9.93)

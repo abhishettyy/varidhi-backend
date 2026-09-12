@@ -67,6 +67,26 @@ def serialize_marine_state_to_chat_response(
         resp_status = raw_resp_dict.get("status") or "success"
         visual_data = raw_resp_dict.get("visual_payload")
 
+    def _extract_spatial_fields(item: Dict[str, Any]) -> Dict[str, Any]:
+        raw_meta = item.get("raw_metadata") or {}
+        raw_f = raw_meta.get("raw_features", {}) if isinstance(raw_meta, dict) else {}
+        if not isinstance(raw_f, dict):
+            raw_f = {}
+
+        lat = item.get("latitude") or item.get("lat") or raw_f.get("latitude") or raw_f.get("lat")
+        lon = item.get("longitude") or item.get("lon") or raw_f.get("longitude") or raw_f.get("lon")
+        bearing = item.get("bearing") or raw_f.get("bearing")
+        species = item.get("species") or raw_f.get("species") or []
+        dist = item.get("distance_nm") or raw_f.get("distance_nm")
+
+        return {
+            "latitude": lat,
+            "longitude": lon,
+            "bearing": bearing,
+            "species": species,
+            "distance_nm": dist,
+        }
+
     # 2. Authoritative P6 Decision Synthesis
     decision_dict = state.get("decision") or {}
     selected_zone = decision_dict.get("selected_zone") or state.get("selected_zone")
@@ -75,6 +95,7 @@ def serialize_marine_state_to_chat_response(
     selected_zone_id: Optional[str] = None
     if selected_zone:
         selected_zone_id = selected_zone.get("zone_id")
+        sp = _extract_spatial_fields(selected_zone)
         decision_summary = DecisionSummary(
             selected_zone_id=selected_zone_id,
             status="SELECTED",
@@ -82,11 +103,11 @@ def serialize_marine_state_to_chat_response(
             risk_score=selected_zone.get("risk_score"),
             regulatory_status=selected_zone.get("regulatory_status", "ELIGIBLE"),
             ranking_score=selected_zone.get("ranking_score"),
-            distance_nm=selected_zone.get("distance_nm"),
-            bearing=selected_zone.get("bearing"),
-            species=selected_zone.get("species") or [],
-            latitude=selected_zone.get("lat") or selected_zone.get("latitude"),
-            longitude=selected_zone.get("lon") or selected_zone.get("longitude"),
+            distance_nm=sp["distance_nm"],
+            bearing=sp["bearing"],
+            species=sp["species"],
+            latitude=sp["latitude"],
+            longitude=sp["longitude"],
             reasons=selected_zone.get("reasons") or ["Top-ranked eligible candidate."],
             safety_level=decision_dict.get("safety_level"),
             action_advice=decision_dict.get("action_advice"),
@@ -103,6 +124,7 @@ def serialize_marine_state_to_chat_response(
             zid = ev.get("zone_id")
             if zid and zid not in seen_zone_ids:
                 seen_zone_ids.add(zid)
+                sp = _extract_spatial_fields(ev)
                 zones_list.append(
                     ZoneSummary(
                         zone_id=zid,
@@ -111,11 +133,11 @@ def serialize_marine_state_to_chat_response(
                         risk_score=ev.get("risk_score"),
                         regulatory_status=ev.get("regulatory_status"),
                         ranking_score=ev.get("ranking_score"),
-                        distance_nm=ev.get("distance_nm"),
-                        bearing=ev.get("bearing"),
-                        species=ev.get("species") or [],
-                        latitude=ev.get("lat") or ev.get("latitude"),
-                        longitude=ev.get("lon") or ev.get("longitude"),
+                        distance_nm=sp["distance_nm"],
+                        bearing=sp["bearing"],
+                        species=sp["species"],
+                        latitude=sp["latitude"],
+                        longitude=sp["longitude"],
                         reasons=ev.get("reasons") or [],
                     )
                 )
@@ -124,6 +146,7 @@ def serialize_marine_state_to_chat_response(
     if not zones_list:
         if selected_zone and selected_zone_id:
             seen_zone_ids.add(selected_zone_id)
+            sp = _extract_spatial_fields(selected_zone)
             zones_list.append(
                 ZoneSummary(
                     zone_id=selected_zone_id,
@@ -132,11 +155,11 @@ def serialize_marine_state_to_chat_response(
                     risk_score=selected_zone.get("risk_score"),
                     regulatory_status=selected_zone.get("regulatory_status", "ELIGIBLE"),
                     ranking_score=selected_zone.get("ranking_score"),
-                    distance_nm=selected_zone.get("distance_nm"),
-                    bearing=selected_zone.get("bearing"),
-                    species=selected_zone.get("species") or [],
-                    latitude=selected_zone.get("lat") or selected_zone.get("latitude"),
-                    longitude=selected_zone.get("lon") or selected_zone.get("longitude"),
+                    distance_nm=sp["distance_nm"],
+                    bearing=sp["bearing"],
+                    species=sp["species"],
+                    latitude=sp["latitude"],
+                    longitude=sp["longitude"],
                     reasons=selected_zone.get("reasons") or [],
                 )
             )
@@ -145,6 +168,7 @@ def serialize_marine_state_to_chat_response(
             zid = rz.get("zone_id")
             if zid and zid not in seen_zone_ids:
                 seen_zone_ids.add(zid)
+                sp = _extract_spatial_fields(rz)
                 zones_list.append(
                     ZoneSummary(
                         zone_id=zid,
@@ -153,11 +177,11 @@ def serialize_marine_state_to_chat_response(
                         risk_score=rz.get("risk_score"),
                         regulatory_status=rz.get("regulatory_status", "ELIGIBLE"),
                         ranking_score=rz.get("ranking_score"),
-                        distance_nm=rz.get("distance_nm"),
-                        bearing=rz.get("bearing"),
-                        species=rz.get("species") or [],
-                        latitude=rz.get("lat") or rz.get("latitude"),
-                        longitude=rz.get("lon") or rz.get("longitude"),
+                        distance_nm=sp["distance_nm"],
+                        bearing=sp["bearing"],
+                        species=sp["species"],
+                        latitude=sp["latitude"],
+                        longitude=sp["longitude"],
                         reasons=rz.get("reasons") or [],
                     )
                 )
@@ -166,6 +190,7 @@ def serialize_marine_state_to_chat_response(
             zid = rj.get("zone_id")
             if zid and zid not in seen_zone_ids:
                 seen_zone_ids.add(zid)
+                sp = _extract_spatial_fields(rj)
                 zones_list.append(
                     ZoneSummary(
                         zone_id=zid,
@@ -174,11 +199,11 @@ def serialize_marine_state_to_chat_response(
                         risk_score=rj.get("risk_score"),
                         regulatory_status=rj.get("regulatory_status", "BLOCKED"),
                         ranking_score=rj.get("ranking_score"),
-                        distance_nm=rj.get("distance_nm"),
-                        bearing=rj.get("bearing"),
-                        species=rj.get("species") or [],
-                        latitude=rj.get("lat") or rj.get("latitude"),
-                        longitude=rj.get("lon") or rj.get("longitude"),
+                        distance_nm=sp["distance_nm"],
+                        bearing=sp["bearing"],
+                        species=sp["species"],
+                        latitude=sp["latitude"],
+                        longitude=sp["longitude"],
                         reasons=rj.get("reasons") or [],
                     )
                 )

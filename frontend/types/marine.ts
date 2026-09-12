@@ -12,9 +12,11 @@ export interface FishingZone {
   code: string; // e.g. "ZONE B"
   status: RecommendationStatus;
   opportunity_score: number; // 0 - 100
+  risk_score?: number;       // 0 - 100
   safety_score: number;      // 0 - 100
+  ranking_score?: number;    // 0 - 100 (composite)
   distance_km: number;       // Distance from selected port/user location
-  bearing: string;           // e.g. "WSW", "245°"
+  bearing: string;           // e.g. "SSW", "245°"
   target_depth_m: number;    // Bathymetry depth
   legal_status: LegalStatus;
   species: string[];         // Target species

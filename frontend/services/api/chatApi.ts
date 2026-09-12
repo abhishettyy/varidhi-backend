@@ -36,16 +36,40 @@ function normalizeAgentResponse(data: Partial<AgentResponseData>, role: RoleType
     }
   }
 
+  const messageContent = data.message || data.markdown_content || 'No response content received from agent.';
+
+  let keyRecs = Array.isArray(data.key_recommendations) ? data.key_recommendations : [];
+  if (keyRecs.length === 0 && data.decision?.action_advice) {
+    keyRecs = [data.decision.action_advice];
+  }
+
+  let evidenceSummary = Array.isArray(data.evidence_summary) ? data.evidence_summary : [];
+  if (evidenceSummary.length === 0 && Array.isArray(data.evidence)) {
+    evidenceSummary = data.evidence.map((ev) => `${ev.source}: ${ev.summary}`);
+  }
+
   return {
     response_id: data.response_id || `resp_${Date.now()}`,
     role: (data.role as RoleType) || role,
-    markdown_content: data.markdown_content || 'No response content received from agent.',
-    safety_alert: data.safety_alert,
-    key_recommendations: Array.isArray(data.key_recommendations) ? data.key_recommendations : [],
-    evidence_summary: Array.isArray(data.evidence_summary) ? data.evidence_summary : [],
+    message: messageContent,
+    markdown_content: messageContent,
+    decision: data.decision,
+    zones: data.zones || [],
+    evidence: data.evidence || [],
     visual_payload: visual,
+    query_context: data.query_context,
+    telemetry: data.telemetry,
+    disclaimer: data.disclaimer,
+    safety_alert: data.safety_alert || (data.decision?.safety_level ? {
+      severity: (data.decision.safety_level as SafetySeverity) || 'caution_yellow',
+      title: data.decision.status === 'SELECTED' ? 'Target Ground Clear & Certified' : 'Operational Caution',
+      description: data.decision.action_advice || 'Maintain standard maritime vigilance.',
+      action_advice: data.decision.action_advice || 'Proceed with vigilance.',
+    } : undefined),
+    key_recommendations: keyRecs,
+    evidence_summary: evidenceSummary,
     status: data.status || 'success',
-    execution_time_seconds: data.execution_time_seconds ?? 0.25,
+    execution_time_seconds: data.execution_time_seconds ?? (data.telemetry?.total_pipeline_ms ? data.telemetry.total_pipeline_ms / 1000 : 0.25),
   };
 }
 
@@ -54,28 +78,42 @@ export async function queryVaridhiAI(
   role: RoleType = 'fisherman',
   contextZoneId?: string
 ): Promise<AgentResponseData> {
-  // 1. Try real backend LangGraph agent endpoint first
+  // 1. Try real backend LangGraph agent endpoint first (POST /chat)
   try {
     const backendRole = mapRoleToBackend(role);
-    const backendResponse = await apiClient.post<AgentResponseData>('/api/chat/query', {
+    const backendResponse = await apiClient.post<AgentResponseData>('/chat', {
       query,
       role: backendRole,
       context_zone_id: contextZoneId,
     });
 
-    if (backendResponse && backendResponse.markdown_content) {
+    if (backendResponse && (backendResponse.message || backendResponse.markdown_content)) {
       console.info(`[Varidhi API: REAL BACKEND] Received live agent response for "${query}":`, backendResponse);
       return normalizeAgentResponse(backendResponse, role);
     }
-  } catch (error) {
-    console.warn(
-      `[Varidhi API: MOCK FALLBACK] Backend query failed (${error instanceof Error ? error.message : String(error)}). Using resilient mock advisory.`
-    );
+  } catch {
+    // 2. Try legacy /api/chat/query alias if /chat returned non-200
+    try {
+      const backendRole = mapRoleToBackend(role);
+      const backendResponse = await apiClient.post<AgentResponseData>('/api/chat/query', {
+        query,
+        role: backendRole,
+        context_zone_id: contextZoneId,
+      });
+
+      if (backendResponse && (backendResponse.message || backendResponse.markdown_content)) {
+        console.info(`[Varidhi API: REAL BACKEND] Received live agent response from alias for "${query}":`, backendResponse);
+        return normalizeAgentResponse(backendResponse, role);
+      }
+    } catch (aliasError) {
+      console.warn(
+        `[Varidhi API: MOCK FALLBACK] Backend query failed (${aliasError instanceof Error ? aliasError.message : String(aliasError)}). Using resilient mock advisory.`
+      );
+    }
   }
 
-  // 2. Resilient Mock Fallback
+  // 3. Resilient Mock Fallback
   await new Promise((resolve) => setTimeout(resolve, 200));
-
 
   const normalized = query.toLowerCase().trim();
 
@@ -92,33 +130,57 @@ export async function queryVaridhiAI(
       return {
         response_id: `resp_${Date.now()}`,
         role: 'fisherman',
+        message:
+          '**Recommended Fishing Zone: Zone B (Netravati Offshore Ground)**\n\nBased on deterministic oceanographic convergence and hydrographic risk evaluation, Zone B (12.90°N, 74.95°E, 8.2 NM SSW) offers the optimal balance of catch opportunity and safety.',
         markdown_content:
-          '**Recommended Fishing Zone: Zone B (Netravati Offshore Ridge)**\n\nBased on current satellite composites and sea conditions, Zone B offers high catch potential while remaining completely safe and legal.',
+          '**Recommended Fishing Zone: Zone B (Netravati Offshore Ground)**\n\nBased on deterministic oceanographic convergence and hydrographic risk evaluation, Zone B (12.90°N, 74.95°E, 8.2 NM SSW) offers the optimal balance of catch opportunity and safety.',
+        decision: {
+          selected_zone_id: 'ZONE_B',
+          status: 'SELECTED',
+          opportunity_score: 66.9,
+          risk_score: 34.9,
+          ranking_score: 67.31,
+          regulatory_status: 'ELIGIBLE',
+          distance_nm: 8.2,
+          bearing: 'SSW',
+          species: ['Mackerel', 'Sardines'],
+          latitude: 12.90,
+          longitude: 74.95,
+          reasons: [
+            'Regulatory eligibility confirmed (Outside all sanctuaries)',
+            'Marine risk score 34.9 is within safe project threshold 50.0',
+            'Calculated heuristic ranking score: 67.3',
+            'Highest ranking among eligible candidates',
+          ],
+          safety_level: 'caution_yellow',
+          action_advice: 'Favorable relative to evaluated alternatives. Maintain standard maritime vigilance.',
+        },
         safety_alert: {
-          severity: 'safe_green',
-          title: 'Favorable Marine Weather',
-          description: 'Wind 11 kts from WSW, wave height 1.1m. Favorable for small craft operations.',
-          action_advice: 'Safe to venture. Recommended departure 04:30 AM.',
+          severity: 'caution_yellow',
+          title: 'CAUTION: Moderate Sea Conditions',
+          description: 'Wind 11 kts from WSW, wave height 1.1m. Favorable relative to evaluated alternatives.',
+          action_advice: 'Favorable relative to evaluated alternatives. Maintain standard maritime vigilance.',
         },
         key_recommendations: [
-          'Zone B is located 31 km WSW from Mangalore Old Port.',
-          'Target depth is 42 meters along the Netravati thermal ridge.',
-          'Expected target species: Indian Mackerel (Rastrelliger), Sardines, and Pelagic Tuna.',
-          'Outside all marine protected sanctuaries (Legal status: ALLOWED).',
+          'Zone B is located 8.2 NM (15.2 km) SSW from Mangalore harbor entrance.',
+          'Target depth is 35 meters along the Netravati thermal gradient.',
+          'Expected target species: Indian Mackerel (Rastrelliger) and Sardines.',
+          'Outside all marine protected sanctuaries (Legal status: ELIGIBLE).',
         ],
         evidence_summary: [
           'INCOIS PFZ Multi-Satellite Composite indicates active chlorophyll front (2.3 mg/m³).',
-          'SST gradient of 0.6°C across the 40m bathymetry contour.',
-          'Hydrodynamic risk is low (significant wave height Hs = 1.1m).',
+          'SST gradient of 0.6°C delta (28.7°C SST) across the 35m bathymetry contour.',
+          'Hydrodynamic risk is moderate-low (significant wave height Hs = 1.1m).',
         ],
         visual_payload: {
           focus_zone_id: 'ZONE_B',
           highlight_layer: 'zones',
           metric_badges: {
-            Opportunity: '83/100 (HIGH)',
-            Safety: '91/100 (GOOD)',
-            Distance: '31 km WSW',
-            Legal: 'ALLOWED',
+            Opportunity: '66.9/100',
+            Risk: '34.9/100',
+            Rank: '67.3/100',
+            Distance: '8.2 NM SSW',
+            Legal: 'ELIGIBLE',
           },
         },
         status: 'success',
@@ -183,24 +245,24 @@ export async function queryVaridhiAI(
           action_advice: 'Top-ranked zone across all 5 verification gates.',
         },
         key_recommendations: [
-          'PFZ: Strong thermal and chlorophyll convergence detected by INCOIS.',
-          'Sea Conditions: Wave height 1.1m is well below the 2.0m small-craft hazard threshold.',
-          'Safety: Calm swell state (8.2s period, safe for mechanized and FRP boats).',
+          'PFZ: Strong thermal and chlorophyll convergence detected by INCOIS (2.3 mg/m³).',
+          'Sea Conditions: Marine risk score 34.9 is well within the safe threshold (50.0). Wave height 1.1m.',
+          'Safety: Calm swell state (8.2s period, safe for mechanized and FRP craft).',
           'Legal Status: 100% open water (clear of Mulki Marine Sanctuary and Naval limits).',
-          'Fuel Efficiency: 31 km run is optimal fuel-to-yield ratio compared to distant grounds.',
+          'Fuel Efficiency: 8.2 NM (15.2 km) run is optimal fuel-to-yield ratio compared to distant grounds.',
         ],
         evidence_summary: [
-          'Zone A has higher opportunity (94) but failed safety gate due to 2.7m wave hazard.',
-          'Zone C has higher opportunity (96) but failed legal gate (Mulki Protected Sanctuary).',
-          'Zone B passed all 5 deterministic decision criteria.',
+          'Zone A has opportunity 76.6 but failed safety gate due to marine risk 75.2 (Hs = 2.7m).',
+          'Zone C has opportunity 84.5 but failed legal gate (Mulki Protected Sanctuary).',
+          'Zone B passed all 5 deterministic decision criteria with rank score 67.31.',
         ],
         visual_payload: {
           focus_zone_id: 'ZONE_B',
           metric_badges: {
-            'PFZ Indicator': 'Strong Front',
+            'PFZ Indicator': 'Strong Front (2.3 mg/m³)',
             'Sea State': 'Favorable (1.1m)',
-            Restrictions: 'None (Clear)',
-            Distance: '31 km',
+            Restrictions: 'None (ELIGIBLE)',
+            Distance: '8.2 NM SSW',
           },
         },
         status: 'success',
@@ -213,10 +275,10 @@ export async function queryVaridhiAI(
         response_id: `resp_${Date.now()}`,
         role: 'fisherman',
         markdown_content:
-          '**Nearest Recommended Fishing Ground: Zone B (31 km WSW)**\n\nWhile Zone A is 18 km away, it is currently flagged as High Risk due to wave chop. Zone B is the nearest safe and productive ground.',
+          '**Nearest Recommended Fishing Ground: Zone B (8.2 NM / 15.2 km SSW)**\n\nWhile Zone A is 14.5 NM away, it is currently flagged as High Risk (75.2) due to wave chop. Zone B is the nearest safe and productive ground.',
         key_recommendations: [
-          'Head 245° WSW from Mangalore harbor entrance.',
-          'Travel time: approximately 1 hr 15 mins at 12 knots.',
+          'Head SSW (198°) from Mangalore harbor entrance.',
+          'Travel time: approximately 40 mins at 12 knots (8.2 NM).',
         ],
         evidence_summary: ['Distance computed from Mangalore Old Port coordinates (74.83°E, 12.86°N).'],
         visual_payload: {
@@ -224,8 +286,8 @@ export async function queryVaridhiAI(
           highlight_layer: 'pfz',
           metric_badges: {
             'Nearest Safe': 'Zone B',
-            Distance: '31 km',
-            Bearing: 'WSW (245°)',
+            Distance: '8.2 NM SSW',
+            Bearing: 'SSW',
           },
         },
         status: 'success',
@@ -238,7 +300,7 @@ export async function queryVaridhiAI(
         response_id: `resp_${Date.now()}`,
         role: 'fisherman',
         markdown_content:
-          '**Current Coastal Marine Conditions (Mangalore Sector):**\n\n• Wind: 33 km/h (11 kts) from WSW\n• Wave Height: 0.8 m\n• Swell: SW 222°, period 8.2s\n• Current: 0.41 m/s southward\n• Sea Surface Temp: 29.9°C\n• Sea State: Slight',
+          '**Current Coastal Marine Conditions (Mangalore Sector):**\n\n• Wind: 11 kts from WSW\n• Wave Height: 1.1 m\n• Swell: SW 222°, period 8.2s\n• Current: 0.8 m/s southward\n• Sea Surface Temp: 28.7°C\n• Sea State: Slight to Moderate',
         safety_alert: {
           severity: 'safe_green',
           title: 'Stable Coastal State',
@@ -246,18 +308,18 @@ export async function queryVaridhiAI(
           action_advice: 'Proceed with scheduled trips.',
         },
         key_recommendations: [
-          'Currents running southward at 0.8 knots; account for drift when setting gillnets.',
-          'Sea temperature 29.9°C is optimal for epipelagic schooling fish.',
+          'Currents running southward at 0.8 m/s; account for drift when setting gillnets.',
+          'Sea temperature 28.7°C is optimal for epipelagic schooling fish (Mackerel, Sardines).',
         ],
         evidence_summary: ['Aggregated from coastal wave buoys and IMD synoptic station.'],
         visual_payload: {
           highlight_layer: 'weather',
           metric_badges: {
-            Wind: '33 km/h WSW',
-            Waves: '0.8 m',
+            Wind: '11 kts WSW',
+            Waves: '1.1 m',
             Swell: 'SW 222°',
-            Current: '0.41 m/s',
-            SST: '29.9°C',
+            Current: '0.8 m/s',
+            SST: '28.7°C',
             'Sea State': 'Slight',
           },
         },
@@ -276,27 +338,27 @@ export async function queryVaridhiAI(
         response_id: `resp_${Date.now()}`,
         role: 'maritime_operator',
         markdown_content:
-          '**Regional Risk Assessment: 2 High-Risk Sectors Identified**\n\n1. **Zone A (Gurupura Shelf Edge)**: Rough sea hazard ($H_s = 2.7m$, wind gusts 24 kts). Excluded for artisanal craft.\n2. **Offshore Depression Buffer**: Deep depression 72 NM west-southwest generating 3.4m peripheral swells.',
+          '**Regional Risk Assessment: 1 High-Risk Zone Identified**\n\n1. **Zone A (Gurupura Shelf Edge)**: Rough sea hazard ($H_s = 2.7m$, wind 24 kts, current 1.8 m/s, Risk = 75.2). Excluded for artisanal craft.\n2. **Offshore Buffer**: Peripheral swells active beyond 20 NM.',
         safety_alert: {
           severity: 'warning_orange',
           title: 'Small Craft Navigational Warning Active',
-          description: 'Artisanal vessels advised to avoid sectors west of 74.65°E longitude.',
+          description: 'Artisanal vessels advised to avoid Zone A sector (12.95°N, 74.80°E).',
           action_advice: 'Issue NAVTEX broadcast to local fisheries federations.',
         },
         key_recommendations: [
-          'Dispatch Coast Guard interceptor C-421 to patrol western boundary.',
-          'Alert Mangalore Port Control to restrict non-mechanized departures past 14:00.',
+          'Patrol western boundary near Zone A (14.5 NM WNW).',
+          'Advise artisanal craft to utilize certified Zone B corridor.',
         ],
         evidence_summary: [
-          'Wave buoy Station MB-04 reports significant wave height peak 2.8m at 14:00 UTC.',
+          'Station MB-04 reports significant wave height peak 2.7m and wind 24 kts at Zone A.',
         ],
         visual_payload: {
           focus_zone_id: 'ZONE_A',
           highlight_layer: 'restrictions',
           metric_badges: {
-            'High Risk Sectors': '2 Active',
+            'High Risk Zone': 'Zone A (75.2)',
             'Max Wave': '2.7 m (Zone A)',
-            'Gale Buffer': 'Active (Depression)',
+            'Zone B Status': 'Safe (34.9)',
           },
         },
         status: 'success',
@@ -309,7 +371,7 @@ export async function queryVaridhiAI(
         response_id: `resp_${Date.now()}`,
         role: 'maritime_operator',
         markdown_content:
-          '**Restricted Maritime Areas Status: 1 Active Sanctuary, 0 Incursions**\n\n• **Mulki Marine Ecological Reserve (MPA-KA-04)**: Strict no-take zone under Wildlife Protection Act. 4 authorized patrol crafts operating within 10 NM radius.',
+          '**Restricted Maritime Areas Status: 1 Active Sanctuary, 0 Incursions**\n\n• **Mulki Marine Ecological Reserve (MPA-KA-04)**: Strict no-take zone under Wildlife Protection Act. Zone C falls directly inside reserve boundary.',
         safety_alert: {
           severity: 'caution_yellow',
           title: 'Ecological Sanctuary Enforced',
@@ -317,15 +379,15 @@ export async function queryVaridhiAI(
           action_advice: 'Automated AIS geofence active; alert triggered if vessels enter at speed < 3 kts.',
         },
         key_recommendations: [
-          'Zone C coordinates fall directly within Mulki MPA boundary.',
-          'Commercial fishers steered away via automated mobile advisory.',
+          'Zone C coordinates (12.82°N, 75.05°E) fall directly within Mulki MPA boundary.',
+          'Commercial fishers steered to Zone B via automated mobile advisory.',
         ],
         evidence_summary: ['Boundary verified against Department of Fisheries Gazette Notification.'],
         visual_payload: {
           focus_zone_id: 'ZONE_C',
           highlight_layer: 'restrictions',
           metric_badges: {
-            'Restricted Zones': 'Mulki MPA',
+            'Restricted Zones': 'Mulki MPA (Zone C)',
             Status: 'Strictly Enforced',
             Enforcement: 'ICG Patrol 102',
           },
@@ -342,8 +404,8 @@ export async function queryVaridhiAI(
         markdown_content:
           '**Coastal Fleet Activity Surveillance:**\n\n• Total Tracked Vessels: 22 crafts\n• Mechanized Trawlers: 14 vessels (concentrated near Zone B)\n• Artisanal Boats: 6 vessels in inshore waters (< 12m depth)\n• Coast Guard Patrol: 2 interceptors active (ICG Interceptor C-421, Coastal Security Police KP-08)',
         key_recommendations: [
-          'Fleet distribution is well-clustered around recommended Zone B.',
-          'Zero unauthorized incursions inside Mulki Marine Sanctuary in last 12 hours.',
+          'Fleet distribution is well-clustered around recommended Zone B (8.2 NM SSW).',
+          'Zero unauthorized incursions inside Mulki Marine Sanctuary (Zone C) in last 12 hours.',
         ],
         evidence_summary: ['Synthesized from coastal AIS transponders and VMS satellite telemetry.'],
         visual_payload: {
@@ -369,14 +431,14 @@ export async function queryVaridhiAI(
         response_id: `resp_${Date.now()}`,
         role: 'researcher',
         markdown_content:
-          '**Oceanographic Analysis: PFZ Front Formation Mechanisms**\n\nThe elevated PFZ strength along the Netravati ridge (Zone B) is driven by bathymetric upwelling at the 40-meter shelf break. Subsurface nutrient-rich colder waters encounter warm coastal currents, generating a 0.6°C horizontal SST gradient and sustained chlorophyll-a blooms (2.3 mg/m³).',
+          '**Oceanographic Analysis: PFZ Front Formation Mechanisms**\n\nThe elevated PFZ strength along the Netravati ridge (Zone B) is driven by bathymetric upwelling at the 35-meter shelf break. Subsurface nutrient-rich colder waters encounter warm coastal currents, generating a 0.6°C horizontal SST gradient and sustained chlorophyll-a blooms (2.3 mg/m³).',
         key_recommendations: [
           'High correlation between MODIS Aqua chlorophyll concentration and pelagic school acoustic signatures.',
           'Recommended for multi-spectral time-series tracking over the next 48 hours.',
         ],
         evidence_summary: [
           'INCOIS PFZ Composite: Thermal Front persistence score 0.88.',
-          'Chlorophyll-a anomaly: +0.7 mg/m³ above seasonal coastal baseline.',
+          'Chlorophyll-a anomaly: 2.3 mg/m³ across the 35m bathymetric contour.',
           'Ekman transport index indicates moderate offshore drift supporting nutrient retention.',
         ],
         visual_payload: {
@@ -386,7 +448,7 @@ export async function queryVaridhiAI(
             'SST Delta': '0.6°C Front',
             Chlorophyll: '2.3 mg/m³',
             Confidence: '92% (High)',
-            Depth: '42 m Shelf',
+            Depth: '35 m Shelf',
           },
         },
         status: 'success',
@@ -399,20 +461,20 @@ export async function queryVaridhiAI(
         response_id: `resp_${Date.now()}`,
         role: 'researcher',
         markdown_content:
-          '**Biophysical Comparison: Zone A vs. Zone B**\n\n| Variable | Zone A (Gurupura) | Zone B (Netravati) |\n| :--- | :--- | :--- |\n| **Opportunity Score** | 94 / 100 | 83 / 100 |\n| **Safety Score** | 47 / 100 (Hazard) | 91 / 100 (Safe) |\n| **Wave Height (Hs)** | 2.7 m (Rough) | 1.1 m (Slight) |\n| **SST Front** | 1.1°C delta | 0.6°C delta |\n| **Chlorophyll-a** | 2.8 mg/m³ | 2.3 mg/m³ |\n| **Legal Status** | Allowed | Allowed |\n| **Recommendation** | **DISQUALIFIED (Wave)** | **OPTIMAL CANDIDATE** |',
+          '**Biophysical Comparison: Zone A vs. Zone B**\n\n| Variable | Zone A (Gurupura) | Zone B (Netravati) |\n| :--- | :--- | :--- |\n| **Opportunity Score** | 76.6 / 100 | 66.9 / 100 |\n| **Risk Score** | 75.2 / 100 (Hazard) | 34.9 / 100 (Safe) |\n| **Ranking Score** | Disqualified | **67.31 / 100** |\n| **Wave Height (Hs)** | 2.7 m (Rough) | 1.1 m (Slight) |\n| **Wind Speed** | 24 kts | 11 kts |\n| **Current Velocity** | 1.8 m/s | 0.8 m/s |\n| **SST Front** | 1.1°C delta | 0.6°C delta |\n| **Chlorophyll-a** | 2.8 mg/m³ | 2.3 mg/m³ |\n| **Legal Status** | Allowed | Allowed |\n| **Recommendation** | **DISQUALIFIED (Risk > 50)** | **OPTIMAL CANDIDATE** |',
         key_recommendations: [
-          'Zone A exhibits superior primary productivity but fails hydrodynamic safety criteria.',
-          'Zone B represents the optimal Pareto frontier between yield and vessel risk.',
+          'Zone A exhibits high primary productivity (76.6) but fails hydrodynamic safety criteria (Risk 75.2 > 50).',
+          'Zone B represents the optimal Pareto frontier between yield and vessel risk (Rank 67.31).',
         ],
         evidence_summary: [
-          'Decision Engine weights: Safety threshold constraint overrides opportunity maximization.',
+          'P6 Deterministic Decision Engine: Safety threshold constraint (<= 50) overrides opportunity maximization.',
         ],
         visual_payload: {
           highlight_layer: 'zones',
           metric_badges: {
-            'Pareto Choice': 'Zone B',
-            'Zone A Risk': 'Hs = 2.7m',
-            'Zone B Score': 'Opportunity 83 / Safety 91',
+            'Selected Zone': 'Zone B (67.31)',
+            'Zone A Risk': '75.2 (Hs = 2.7m)',
+            'Zone B Risk': '34.9 (Hs = 1.1m)',
           },
         },
         status: 'success',
@@ -425,9 +487,9 @@ export async function queryVaridhiAI(
         response_id: `resp_${Date.now()}`,
         role: 'researcher',
         markdown_content:
-          '**SST Trends & Time-Series (Last 7 Days - Mangalore Shelf):**\n\n• Day -6: 29.4°C (Baseline coastal water)\n• Day -4: 29.6°C (Thermal stratification begins)\n• Day -2: 30.1°C (Warm surface layer formed)\n• Yesterday: 29.8°C (Upwelling front starts along 40m contour)\n• Today: 29.9°C (Stable thermal gradient: 0.6°C delta at Zone B)',
+          '**SST Trends & Time-Series (Mangalore Shelf Sector):**\n\n• Baseline Coastal SST: 29.4°C\n• Zone B SST: 28.7°C (Thermal gradient: 0.6°C delta along 35m contour)\n• Zone A SST: 28.1°C (Thermal gradient: 1.1°C delta)\n• Upwelling Front: Active chlorophyll front (2.3 mg/m³)',
         key_recommendations: [
-          'Upwelling event is entering peak stabilization phase.',
+          'Upwelling event is entering peak stabilization phase along 35m contour.',
           'Expected to sustain pelagic feeding grounds for 3-4 days.',
         ],
         evidence_summary: [
@@ -436,9 +498,9 @@ export async function queryVaridhiAI(
         visual_payload: {
           highlight_layer: 'pfz',
           metric_badges: {
-            'Mean SST': '29.9°C',
-            '7-Day Delta': '+0.5°C',
-            'Front Stability': 'Peak Upwelling',
+            'Zone B SST': '28.7°C',
+            'SST Delta': '0.6°C',
+            Chlorophyll: '2.3 mg/m³',
           },
         },
         status: 'success',
@@ -451,7 +513,7 @@ export async function queryVaridhiAI(
   return {
     response_id: `resp_${Date.now()}`,
     role,
-    markdown_content: `**Varidhi Intelligence Advisory**\n\nProcessed query: "${query}" across marine weather, INCOIS PFZ telemetry, and maritime safety databases.\n\nCurrent status for Mangalore coastal sector: Normal coastal conditions with active recommended fishing grounds at Zone B (31 km WSW).`,
+    markdown_content: `**Varidhi Intelligence Advisory**\n\nProcessed query: "${query}" across marine weather, INCOIS PFZ telemetry, and maritime safety databases.\n\nCurrent status for Mangalore coastal sector: Normal coastal conditions with active recommended fishing grounds at Zone B (8.2 NM SSW).`,
     key_recommendations: [
       'Zone B remains the primary recommendation for morning fishing trips.',
       'Check marine weather before venturing beyond 20 nautical miles.',

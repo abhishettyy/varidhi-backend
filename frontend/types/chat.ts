@@ -85,6 +85,8 @@ export interface TelemetryResponse {
   llm_fallback_reason?: string;
   llm_provider?: string;
   llm_model?: string;
+  parser_mode?: string;
+  node_latencies_ms?: Record<string, number>;
 }
 
 export interface AgentResponseData {

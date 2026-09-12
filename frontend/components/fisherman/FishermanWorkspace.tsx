@@ -100,78 +100,53 @@ export const FishermanWorkspace: React.FC = () => {
             zIndex: 10,
           }}
         >
-          {/* Navigation 100px Pill Tabs */}
+          {/* Navigation — Segmented Control */}
           <div
             style={{
-              padding: '14px 16px 10px 16px',
+              padding: '12px 16px',
               borderBottom: '1px solid #cecac8',
-              display: 'flex',
-              gap: '8px',
               backgroundColor: '#f6f3f1',
             }}
           >
-            <button
-              type="button"
-              onClick={() => setActiveTab('advisory')}
+            <div
               style={{
-                flex: 1,
-                padding: '8px 12px',
+                display: 'flex',
+                backgroundColor: '#eeecea',
                 borderRadius: '100px',
-                fontSize: '11px',
-                fontWeight: 500,
-                border: activeTab === 'advisory' ? 'none' : '1px solid #cecac8',
-                backgroundColor: activeTab === 'advisory' ? '#242424' : '#ffffff',
-                color: activeTab === 'advisory' ? '#f6f3f1' : '#767371',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-                textTransform: 'uppercase',
-                letterSpacing: '0.04em',
+                padding: '3px',
+                gap: '2px',
               }}
             >
-              Advisory
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('chat')}
-              style={{
-                flex: 1,
-                padding: '8px 12px',
-                borderRadius: '100px',
-                fontSize: '11px',
-                fontWeight: 500,
-                border: activeTab === 'chat' ? 'none' : '1px solid #cecac8',
-                backgroundColor: activeTab === 'chat' ? '#242424' : '#ffffff',
-                color: activeTab === 'chat' ? '#f6f3f1' : '#767371',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-                textTransform: 'uppercase',
-                letterSpacing: '0.04em',
-              }}
-            >
-              AI Assistant
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('conditions')}
-              style={{
-                flex: 1,
-                padding: '8px 12px',
-                borderRadius: '100px',
-                fontSize: '11px',
-                fontWeight: 500,
-                border: activeTab === 'conditions' ? 'none' : '1px solid #cecac8',
-                backgroundColor: activeTab === 'conditions' ? '#242424' : '#ffffff',
-                color: activeTab === 'conditions' ? '#f6f3f1' : '#767371',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-                textTransform: 'uppercase',
-                letterSpacing: '0.04em',
-              }}
-            >
-              Telemetry
-            </button>
+              {(['advisory', 'chat', 'conditions'] as const).map((tab) => {
+                const labels = { advisory: 'Advisory', chat: 'AI Chat', conditions: 'Telemetry' };
+                const active = activeTab === tab;
+                return (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setActiveTab(tab)}
+                    style={{
+                      flex: 1,
+                      padding: '7px 10px',
+                      borderRadius: '100px',
+                      fontSize: '11px',
+                      fontWeight: active ? 600 : 400,
+                      border: 'none',
+                      backgroundColor: active ? '#ffffff' : 'transparent',
+                      color: active ? '#242424' : '#767371',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.04em',
+                      boxShadow: active ? '0 1px 4px rgba(36,36,36,0.1)' : 'none',
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    {labels[tab]}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Tab Content Panels */}
@@ -259,41 +234,53 @@ export const FishermanWorkspace: React.FC = () => {
             onSelectZone={handleSelectZone}
           />
 
-          {/* Floating AI Query Bar at bottom of map for quick interaction */}
+          {/* Floating AI Query Bar */}
           <div
             style={{
               position: 'absolute',
-              bottom: 28,
+              bottom: 24,
               left: '50%',
               transform: 'translateX(-50%)',
-              width: 'min(90%, 540px)',
+              width: 'min(92%, 520px)',
               zIndex: 10,
             }}
           >
             <div
               style={{
-                padding: '8px 12px 8px 18px',
-                backgroundColor: '#f6f3f1',
+                padding: '10px 10px 10px 20px',
+                backgroundColor: 'rgba(246, 243, 241, 0.96)',
+                backdropFilter: 'blur(12px)',
                 border: '1px solid #cecac8',
                 borderRadius: '100px',
-                boxShadow: '0 4px 16px rgba(36, 36, 36, 0.08)',
+                boxShadow: '0 8px 24px rgba(36, 36, 36, 0.12), 0 2px 8px rgba(36,36,36,0.06)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 gap: '12px',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                <div
                   style={{
-                    width: 7,
-                    height: 7,
+                    width: 8,
+                    height: 8,
                     borderRadius: '50%',
                     backgroundColor: '#2b59d1',
+                    flexShrink: 0,
+                    boxShadow: '0 0 0 3px rgba(43,89,209,0.15)',
                   }}
                 />
-                <span style={{ fontSize: '12px', color: '#242424', fontWeight: 500 }}>
-                  Active Focus: {selectedZone?.name} ({selectedZone?.distance_km} km {selectedZone?.bearing})
+                <span
+                  style={{
+                    fontSize: '12px',
+                    color: '#242424',
+                    fontWeight: 500,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {selectedZone?.name} · {selectedZone?.distance_km} km {selectedZone?.bearing}
                 </span>
               </div>
 
@@ -305,22 +292,29 @@ export const FishermanWorkspace: React.FC = () => {
                   alignItems: 'center',
                   gap: '6px',
                   fontSize: '11px',
-                  fontWeight: 500,
-                  padding: '7px 16px',
+                  fontWeight: 600,
+                  padding: '8px 18px',
                   borderRadius: '100px',
-                  backgroundColor: '#2b59d1',
+                  backgroundColor: '#242424',
                   color: '#f6f3f1',
                   border: 'none',
                   cursor: 'pointer',
                   textTransform: 'uppercase',
                   letterSpacing: '0.04em',
-                  transition: 'opacity 0.15s ease',
+                  transition: 'opacity 0.15s ease, transform 0.15s ease',
+                  flexShrink: 0,
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.9')}
-                onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.opacity = '0.85';
+                  e.currentTarget.style.transform = 'scale(1.02)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.opacity = '1';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
               >
-                <MessageSquare size={13} />
-                <span>CONSULT AI ▸</span>
+                <MessageSquare size={12} />
+                <span>Ask AI ▸</span>
               </button>
             </div>
           </div>

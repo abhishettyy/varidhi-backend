@@ -22,13 +22,14 @@
   --color-ash: #cecac8;
 
   /* Typography Fonts */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-untitled-serif: var(--font-untitled-serif), ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
-  --font-abc-diatype-mono: var(--font-abc-diatype-mono), 'JetBrains Mono', 'IBM Plex Mono', 'Space Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --font-untitled-sans: var(--font-untitled-sans), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-abc-diatype-mono: var(--font-abc-diatype-mono), 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-untitled-sans: var(--font-sans);
 
-  /* Legacy Font Fallbacks (Map smoothly to Monad) */
+  /* Legacy Font Fallbacks */
   --font-display: var(--font-untitled-serif);
-  --font-haffer: var(--font-abc-diatype-mono);
+  --font-haffer: var(--font-sans);
   --font-ui-monospace: var(--font-abc-diatype-mono);
 
   /* Typography Scale */
@@ -141,10 +142,16 @@ body {
   min-height: 100%;
   background-color: var(--color-parchment);
   color: var(--color-off-black);
-  font-family: var(--font-abc-diatype-mono), ui-monospace, monospace;
+  font-family: var(--font-sans);
+  font-size: 14px;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Monospace only for data/metric/code contexts */
+.font-mono {
+  font-family: var(--font-abc-diatype-mono);
 }
 
 /* Monad Feature Card */
@@ -175,11 +182,10 @@ body {
   color: #ffffff;
   border-radius: var(--radius-buttons);
   padding: 14px 28px;
-  font-family: var(--font-abc-diatype-mono), monospace;
-  font-size: 14px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: -0.02em;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -367,3 +373,78 @@ body {
 html {
   scroll-behavior: smooth;
 }
+
+/* ===================================================
+   VARIDHI ANIMATION KEYFRAMES
+   =================================================== */
+
+@keyframes varPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.55; transform: scale(0.85); }
+}
+
+@keyframes varSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes varFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes varDots {
+  0%, 20% { content: '.'; }
+  40% { content: '..'; }
+  60%, 100% { content: '...'; }
+}
+
+@keyframes varSlideInLeft {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes varSlideInRight {
+  from { opacity: 0; transform: translateX(10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes varGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(43, 89, 209, 0); }
+  50% { box-shadow: 0 0 0 4px rgba(43, 89, 209, 0.15); }
+}
+
+/* Chat message entrance animations */
+.chat-msg-user {
+  animation: varSlideInRight 0.2s ease;
+}
+
+.chat-msg-ai {
+  animation: varSlideInLeft 0.25s ease;
+}
+
+/* Pipeline stream node pulse */
+.pipeline-running {
+  animation: varGlow 1.4s ease-in-out infinite;
+}
+
+/* Smooth scrollbar for chat */
+.chat-scroll-area {
+  scrollbar-width: thin;
+  scrollbar-color: #cecac8 transparent;
+}
+
+.chat-scroll-area::-webkit-scrollbar {
+  width: 4px;
+}
+
+.chat-scroll-area::-webkit-scrollbar-thumb {
+  background: #cecac8;
+  border-radius: 9999px;
+}
+
+/* Animate spin utility for Lucide icons */
+.animate-spin {
+  animation: varSpin 1s linear infinite;
+}
+

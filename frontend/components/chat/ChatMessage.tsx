@@ -3,6 +3,7 @@
 import React from 'react';
 import { ChatMessageItem } from '@/types/chat';
 import { AIResponseCard } from './AIResponseCard';
+import { MarkdownRenderer } from './MarkdownRenderer';
 import { User, Sparkles } from 'lucide-react';
 
 interface ChatMessageProps {
@@ -20,20 +21,21 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
 
   return (
     <div
+      className={isUser ? 'chat-msg-user' : 'chat-msg-ai'}
       style={{
         display: 'flex',
-        gap: '12px',
+        gap: '10px',
         alignItems: 'flex-start',
-        marginBottom: '16px',
+        marginBottom: '14px',
         flexDirection: isUser ? 'row-reverse' : 'row',
-        fontFamily: 'var(--font-abc-diatype-mono), monospace',
+        fontFamily: 'var(--font-sans)',
       }}
     >
       {/* Sender Avatar */}
       <div
         style={{
-          width: 30,
-          height: 30,
+          width: 28,
+          height: 28,
           borderRadius: '9999px',
           backgroundColor: isUser ? '#242424' : '#cfdaf5',
           border: '1px solid #cecac8',
@@ -42,56 +44,72 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
           justifyContent: 'center',
           color: isUser ? '#f6f3f1' : '#2b59d1',
           flexShrink: 0,
+          marginTop: '2px',
         }}
       >
-        {isUser ? <User size={14} /> : <Sparkles size={14} />}
+        {isUser ? <User size={13} /> : <Sparkles size={13} />}
       </div>
 
       {/* Message Bubble */}
       <div
         style={{
-          maxWidth: '85%',
-          padding: '14px 18px',
-          borderRadius: '20px',
-          backgroundColor: isUser ? '#ffffff' : '#f6f3f1',
-          border: '1px solid #cecac8',
-          color: '#242424',
+          maxWidth: '88%',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px',
+          alignItems: isUser ? 'flex-end' : 'flex-start',
         }}
       >
-        {/* Timestamp & Sender */}
-        <div
+        {/* Timestamp */}
+        <span
           style={{
-            fontSize: '10px',
-            color: '#767371',
-            marginBottom: '8px',
-            textAlign: isUser ? 'right' : 'left',
+            fontSize: '9px',
+            color: '#a8a29e',
             textTransform: 'uppercase',
-            letterSpacing: '0.04em',
+            letterSpacing: '0.05em',
+            paddingInline: '4px',
           }}
         >
-          {isUser ? 'OPERATOR' : 'VARIDHI SWARM'} • {message.timestamp}
-        </div>
+          {isUser ? 'You' : 'Varidhi Intelligence'} · {message.timestamp}
+        </span>
 
-        {/* User plain text vs AI structured card */}
-        {isUser || !message.data ? (
-          <p
-            style={{
-              fontSize: '13px',
-              lineHeight: 1.6,
-              margin: 0,
-              color: '#242424',
-              whiteSpace: 'pre-wrap',
-            }}
-          >
-            {message.content}
-          </p>
-        ) : (
-          <AIResponseCard
-            data={message.data}
-            onFocusZone={onFocusZone}
-            onViewLayer={onViewLayer}
-          />
-        )}
+        {/* Bubble */}
+        <div
+          style={{
+            padding: isUser ? '10px 16px' : '14px 18px',
+            borderRadius: isUser ? '18px 18px 6px 18px' : '6px 18px 18px 18px',
+            backgroundColor: isUser ? '#242424' : '#ffffff',
+            border: isUser ? 'none' : '1px solid #cecac8',
+            color: isUser ? '#f6f3f1' : '#242424',
+            boxShadow: isUser ? 'none' : '0 1px 4px rgba(36,36,36,0.04)',
+          }}
+        >
+          {isUser || !message.data ? (
+            isUser ? (
+              <p
+                style={{
+                  fontSize: '13px',
+                  lineHeight: 1.6,
+                  margin: 0,
+                  color: '#f6f3f1',
+                  whiteSpace: 'pre-wrap',
+                  fontFamily: 'var(--font-sans)',
+                }}
+              >
+                {message.content}
+              </p>
+            ) : (
+              // AI message without structured data — render as markdown
+              <MarkdownRenderer content={message.content} />
+            )
+          ) : (
+            <AIResponseCard
+              data={message.data}
+              onFocusZone={onFocusZone}
+              onViewLayer={onViewLayer}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

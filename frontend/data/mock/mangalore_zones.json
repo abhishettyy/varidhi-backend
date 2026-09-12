@@ -1,92 +1,96 @@
 [
   {
     "id": "ZONE_B",
-    "name": "Zone B - Netravati Offshore Ridge",
+    "name": "Zone B - Netravati Offshore Ground",
     "code": "ZONE B",
     "status": "recommended",
-    "opportunity_score": 83,
-    "safety_score": 91,
-    "distance_km": 31,
-    "bearing": "WSW",
-    "target_depth_m": 42,
+    "opportunity_score": 67,
+    "risk_score": 35,
+    "safety_score": 65,
+    "ranking_score": 67.31,
+    "distance_km": 15.2,
+    "bearing": "SSW",
+    "target_depth_m": 35,
     "legal_status": "allowed",
-    "species": ["Indian Mackerel (Rastrelliger)", "Sardines", "Pelagic Tuna"],
-    "coordinates": [74.6000, 12.8000],
+    "species": ["Mackerel", "Sardines"],
+    "coordinates": [74.9500, 12.9000],
     "reasons": [
-      "Favourable PFZ thermal front alignment (INCOIS composite match)",
-      "Suitable Sea Surface Temperature front (28.4°C, 0.6°C delta)",
+      "Regulatory eligibility confirmed (Outside all sanctuaries)",
+      "Moderate thermal front (0.6°C delta, 28.7°C SST)",
       "Elevated chlorophyll-a productivity (2.3 mg/m³)",
-      "Low wave height (1.1m) and calm swell state safe for small craft"
+      "Marine risk score 34.9 is within safe project threshold 50.0 (Wave height 1.1m, Wind 11 kts)"
     ],
     "warnings": [
-      "Normal sea vigilance advised; wind 11 kts from WSW"
+      "Favorable relative to evaluated alternatives. Maintain standard maritime vigilance."
     ],
     "evidence": {
-      "pfz_source": "INCOIS PFZ Multi-Satellite Composite (Mock)",
-      "sst_front": "0.6°C thermal gradient along 40m isobath",
-      "chlorophyll": "2.3 mg/m³ (High oceanic productivity indicator)",
-      "weather_condition": "Wave height 1.1m, Wind 11 kts, Swell period 8.2s",
-      "restriction_check": "Verified clear of Marine Sanctuary and Naval Exercise limits"
+      "pfz_source": "INCOIS PFZ Multi-Satellite Composite",
+      "sst_front": "0.6°C thermal gradient along 35m isobath",
+      "chlorophyll": "2.3 mg/m³ (Active plankton productivity)",
+      "weather_condition": "Wave height 1.1m, Wind 11 kts, Swell period 7.5s",
+      "restriction_check": "Verified 100% clear of Marine Sanctuary and Naval Exercise limits"
     }
   },
   {
     "id": "ZONE_A",
-    "name": "Zone A - Gurupura Shelf Edge",
+    "name": "Zone A - Gurupura Shelf Ground",
     "code": "ZONE A",
     "status": "high_risk",
-    "opportunity_score": 94,
-    "safety_score": 47,
-    "distance_km": 18,
-    "bearing": "W",
-    "target_depth_m": 35,
+    "opportunity_score": 77,
+    "risk_score": 75,
+    "safety_score": 25,
+    "distance_km": 26.9,
+    "bearing": "WNW",
+    "target_depth_m": 45,
     "legal_status": "allowed",
-    "species": ["Seer Fish (Surmai)", "King Mackerel", "Anchovies"],
-    "coordinates": [74.6900, 12.9100],
+    "species": ["Pelagic Tuna", "Kingfish"],
+    "coordinates": [74.8000, 12.9500],
     "reasons": [
-      "Very high biological productivity and dense fish school convergence",
-      "Close proximity to port (18 km directly west)",
-      "DISQUALIFIED FROM TOP RANKING due to rough hydrodynamic hazard"
+      "High biological productivity (Chl-a 2.8 mg/m³, SST front 0.9°C delta)",
+      "DISQUALIFIED FROM TOP RANKING due to rough hydrodynamic hazard",
+      "Marine risk score 75.2 exceeds project decision threshold 50.0"
     ],
     "warnings": [
-      "CRITICAL HAZARD: Significant wave height Hs = 2.7m with strong rip currents",
-      "Surface wind gusts exceeding 24 kts from WNW; small fishing crafts must not venture"
+      "CRITICAL HAZARD: Significant wave height Hs = 2.4m exceeds craft threshold (2.0m)",
+      "Sustained wind 22.0 kts with gusts 28.0 kts from WSW; small crafts must not venture"
     ],
     "evidence": {
-      "pfz_source": "INCOIS PFZ Front (Mock)",
-      "sst_front": "Strong 1.1°C thermal gradient front",
-      "chlorophyll": "2.8 mg/m³ (Very high plankton concentration)",
-      "weather_condition": "High wave hazard: 2.7m rough seas, Wind 24 kts, Swell 12.4s",
+      "pfz_source": "INCOIS PFZ Front (Confidence: 0.88)",
+      "sst_front": "High thermal front (0.9°C delta, 28.4°C SST)",
+      "chlorophyll": "2.8 mg/m³ (High density)",
+      "weather_condition": "Rough seas: 2.4m waves, Wind 22 kts, Swell 1.8m",
       "restriction_check": "Legally open; excluded solely on maritime safety threshold"
     }
   },
   {
     "id": "ZONE_C",
-    "name": "Zone C - Mulki Coral Shoal Buffer",
+    "name": "Zone C - Netravati Sanctuary Buffer",
     "code": "ZONE C",
     "status": "restricted",
-    "opportunity_score": 96,
-    "safety_score": 92,
-    "distance_km": 15,
-    "bearing": "NW",
-    "target_depth_m": 28,
+    "opportunity_score": 85,
+    "risk_score": 31,
+    "safety_score": 69,
+    "distance_km": 33.3,
+    "bearing": "SSE",
+    "target_depth_m": 60,
     "legal_status": "restricted",
-    "species": ["Snapper", "Reef Grouper", "Squid"],
-    "coordinates": [74.7400, 13.0200],
+    "species": ["Yellowfin Tuna", "Barracuda"],
+    "coordinates": [75.0500, 12.8200],
     "reasons": [
-      "Exceptionally high fishing productivity and calm sea state",
-      "DISQUALIFIED: Overlaps designated Coastal Marine Sanctuary & Ecology Buffer",
-      "Strict legal prohibition overrides biological suitability scores"
+      "Highest oceanographic opportunity (Chl-a 3.2 mg/m³, SST front 1.1°C delta)",
+      "DISQUALIFIED BY HARD REGULATORY FILTER: Netravati Marine Ecological Sanctuary (MPA)",
+      "Strict legal prohibition overrides all biological suitability scores"
     ],
     "warnings": [
-      "LEGAL PROHIBITION: Commercial & mechanized fishing strictly prohibited under Wildlife Protection Act (Mock)",
+      "LEGAL PROHIBITION: Commercial & artisanal fishing strictly prohibited under State Gazette",
       "Heavy fines and vessel impoundment enforced by Coast Guard"
     ],
     "evidence": {
-      "pfz_source": "INCOIS High Confidence PFZ (Mock)",
-      "sst_front": "28.7°C stable warm pocket",
-      "chlorophyll": "3.1 mg/m³",
-      "weather_condition": "Calm seas: Wave 0.8m, Wind 8 kts",
-      "restriction_check": "FAILED: Coordinates intersect Mulki Marine Protected Area (MPA-KA-04)"
+      "pfz_source": "INCOIS High Confidence PFZ (Confidence: 0.94)",
+      "sst_front": "Strong thermal front (1.1°C delta, 28.2°C SST)",
+      "chlorophyll": "3.2 mg/m³ (Very High density)",
+      "weather_condition": "Calm seas: Wave 1.0m, Wind 9.5 kts",
+      "restriction_check": "FAILED: Intersects Netravati Marine Protected Sanctuary & Port Approach"
     }
   }
 ]

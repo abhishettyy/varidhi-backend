@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ArrowRight, Mic, Sparkles } from 'lucide-react';
+import { ArrowRight, Mic } from 'lucide-react';
 
 interface ChatInputProps {
   onSendMessage: (text: string) => void;
@@ -24,6 +24,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     setInput('');
   };
 
+  const canSend = input.trim() && !disabled;
+
   return (
     <form
       onSubmit={handleSubmit}
@@ -31,18 +33,28 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         display: 'flex',
         alignItems: 'center',
         gap: '8px',
-        padding: '6px 8px 6px 16px',
-        backgroundColor: '#ffffff',
+        padding: '7px 8px 7px 16px',
+        backgroundColor: disabled ? '#f6f3f1' : '#ffffff',
         border: `1px solid ${isFocused ? '#2b59d1' : '#cecac8'}`,
         borderRadius: '100px',
-        boxShadow: isFocused ? '0 0 0 1px #2b59d1' : 'none',
-        transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+        boxShadow: isFocused ? '0 0 0 3px rgba(43, 89, 209, 0.1)' : 'none',
+        transition: 'border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease',
         fontFamily: 'var(--font-abc-diatype-mono), monospace',
+        opacity: disabled ? 0.7 : 1,
       }}
     >
-      <div style={{ color: '#767371', display: 'flex', alignItems: 'center' }}>
-        <Sparkles size={15} />
-      </div>
+      {/* Varidhi pulse dot when idle, wave when loading */}
+      <div
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: '50%',
+          backgroundColor: disabled ? '#2b59d1' : '#cecac8',
+          flexShrink: 0,
+          animation: disabled ? 'varPulse 1s ease-in-out infinite' : 'none',
+          transition: 'background-color 0.2s ease',
+        }}
+      />
 
       <input
         type="text"
@@ -50,7 +62,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         onChange={(e) => setInput(e.target.value)}
-        placeholder={placeholder}
+        placeholder={disabled ? 'Processing query...' : placeholder}
         disabled={disabled}
         style={{
           flex: 1,
@@ -58,56 +70,65 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           border: 'none',
           outline: 'none',
           color: '#242424',
-          fontSize: '13px',
+          fontSize: '12px',
           fontFamily: 'inherit',
+          letterSpacing: '-0.01em',
         }}
       />
 
+      {/* Mic shortcut button */}
       <button
         type="button"
-        title="Voice Prompt"
+        title="Sample query"
         onClick={() => {
-          setInput('Where should I fish tomorrow morning?');
+          if (!disabled) setInput('Where should I fish tomorrow morning?');
         }}
+        disabled={disabled}
         style={{
           background: 'none',
           border: 'none',
-          color: '#767371',
-          cursor: 'pointer',
-          padding: '6px',
+          color: '#cecac8',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          padding: '5px',
           borderRadius: '9999px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           transition: 'color 0.15s ease',
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.color = '#242424')}
-        onMouseLeave={(e) => (e.currentTarget.style.color = '#767371')}
+        onMouseEnter={(e) => { if (!disabled) e.currentTarget.style.color = '#767371'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.color = '#cecac8'; }}
       >
-        <Mic size={15} />
+        <Mic size={14} />
       </button>
 
+      {/* Send button */}
       <button
         type="submit"
-        disabled={!input.trim() || disabled}
+        disabled={!canSend}
         style={{
-          backgroundColor: input.trim() && !disabled ? '#2b59d1' : '#cecac8',
+          backgroundColor: canSend ? '#2b59d1' : '#e8e5e3',
           border: 'none',
-          color: '#f6f3f1',
-          cursor: input.trim() && !disabled ? 'pointer' : 'not-allowed',
-          padding: '8px 18px',
+          color: canSend ? '#ffffff' : '#a8a29e',
+          cursor: canSend ? 'pointer' : 'not-allowed',
+          padding: '8px 16px',
           borderRadius: '100px',
           display: 'flex',
           alignItems: 'center',
-          gap: '6px',
-          fontSize: '12px',
-          fontWeight: 500,
+          gap: '5px',
+          fontSize: '11px',
+          fontWeight: 600,
           fontFamily: 'inherit',
-          transition: 'background-color 0.15s ease',
+          letterSpacing: '0.04em',
+          textTransform: 'uppercase',
+          transition: 'background-color 0.15s ease, color 0.15s ease, transform 0.1s ease',
+          flexShrink: 0,
         }}
+        onMouseEnter={(e) => { if (canSend) e.currentTarget.style.transform = 'scale(1.03)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
       >
-        <span>QUERY</span>
-        <ArrowRight size={13} />
+        <span>Query</span>
+        <ArrowRight size={12} />
       </button>
     </form>
   );

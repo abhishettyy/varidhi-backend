@@ -29,6 +29,10 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+# Vendored / local packages
+vendor/
+backend/vendor/
+
 # PyInstaller
 *.manifest
 *.spec
@@ -61,6 +65,11 @@ venv.bak/
 # Jupyter Notebook
 .ipynb_checkpoints
 
+# Databases & local state
+*.sqlite
+*.sqlite3
+*.db-journal
+
 # ==========================================
 # Node / Frontend
 # ==========================================
@@ -90,9 +99,13 @@ dist/
 .env.production.local
 *.env
 !*.env.example
+*.pem
+*.key
+*.cert
+*.crt
 
 # ==========================================
-# IDEs and Editors
+# IDEs, Editors & Agent Tools
 # ==========================================
 .vscode/*
 !.vscode/settings.json
@@ -103,6 +116,9 @@ dist/
 *.swp
 *.swo
 *~
+.agents/
+.gemini/
+.antigravity/
 
 # ==========================================
 # Operating System Files

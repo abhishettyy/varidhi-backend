@@ -1,0 +1,59 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [74.6200, 12.8200]
+      },
+      "properties": {
+        "vessel_id": "IND-KA-04-129",
+        "name": "Sea Queen (Trawler)",
+        "type": "mechanized_trawler",
+        "speed_knots": 6.2,
+        "heading_deg": 240,
+        "length_m": 16.5,
+        "gear_type": "Bottom Trawl",
+        "status": "active_fishing",
+        "last_ping": "2026-09-11T07:15:00Z"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [74.7200, 12.8800]
+      },
+      "properties": {
+        "vessel_id": "IND-KA-04-405",
+        "name": "Matsya Sagar",
+        "type": "purse_seiner",
+        "speed_knots": 8.0,
+        "heading_deg": 265,
+        "length_m": 22.0,
+        "gear_type": "Purse Seine",
+        "status": "underway",
+        "last_ping": "2026-09-11T07:22:00Z"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [74.7600, 12.9800]
+      },
+      "properties": {
+        "vessel_id": "ICG-C-428",
+        "name": "ICGS Varad (Coast Guard Patrol)",
+        "type": "coast_guard_patrol",
+        "speed_knots": 14.5,
+        "heading_deg": 330,
+        "length_m": 45.0,
+        "gear_type": "Patrol Vessel",
+        "status": "sanctuary_patrol",
+        "last_ping": "2026-09-11T07:28:00Z"
+      }
+    }
+  ]
+}

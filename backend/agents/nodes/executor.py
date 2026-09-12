@@ -98,6 +98,8 @@ async def execute_single_step(
     return res
 
 
+import time
+
 async def executor_node(state: MarineState) -> Dict[str, Any]:
     """
     LangGraph node: Generic, dependency-aware DAG executor.
@@ -107,18 +109,26 @@ async def executor_node(state: MarineState) -> Dict[str, Any]:
     - Explicitly passes dependency outputs to downstream steps.
     - Enforces InputPolicy (REQUIRE_ALL, ALLOW_PARTIAL, OPTIONAL).
     - Maintains state compatibility for downstream evidence assembly & response generation.
+    - Measures individual tool execution latencies and parallel DAG duration.
     """
+    t0 = time.perf_counter()
     plan = state.get("execution_plan")
     steps: List[PlanStep] = state.get("execution_steps") or (plan.steps if plan else [])
-    errors: List[str] = list(state.get("errors", []))
-    tool_results: List[Dict[str, Any]] = list(state.get("tool_results", []))
-    analytics_results: List[Dict[str, Any]] = list(state.get("analytics_results", []))
+    errors: List[str] = list(state.get("errors") or [])
+    tool_results: List[Dict[str, Any]] = list(state.get("tool_results") or [])
+    analytics_results: List[Dict[str, Any]] = list(state.get("analytics_results") or [])
+    tool_timings_ms: Dict[str, float] = {}
 
     if not steps:
+        latency_ms = round((time.perf_counter() - t0) * 1000, 2)
+        latency_telemetry = dict(state.get("latency_telemetry") or {})
+        latency_telemetry["executor_ms"] = latency_ms
+        latency_telemetry["tool_timings_ms"] = tool_timings_ms
         return {
             "tool_results": tool_results,
             "analytics_results": analytics_results,
             "errors": errors,
+            "latency_telemetry": latency_telemetry,
         }
 
     # 1. Check for dependency cycles
@@ -126,10 +136,15 @@ async def executor_node(state: MarineState) -> Dict[str, Any]:
     if cycle:
         err_msg = f"Dependency cycle detected in execution plan: {' -> '.join(cycle)}"
         errors.append(err_msg)
+        latency_ms = round((time.perf_counter() - t0) * 1000, 2)
+        latency_telemetry = dict(state.get("latency_telemetry") or {})
+        latency_telemetry["executor_ms"] = latency_ms
+        latency_telemetry["tool_timings_ms"] = tool_timings_ms
         return {
             "tool_results": tool_results,
             "analytics_results": analytics_results,
             "errors": errors,
+            "latency_telemetry": latency_telemetry,
         }
 
     registry = get_tool_registry()
@@ -163,19 +178,23 @@ async def executor_node(state: MarineState) -> Dict[str, Any]:
                 }
                 step_outputs[step_id_key] = blocked_res
                 completed_steps.add(s.id)
+                tool_timings_ms[step_id_key] = 0.0
                 errors.append(f"Execution error in {step_id_key}: blocked by upstream dependencies.")
             break
 
         # Execute all currently ready steps concurrently
         async def run_step(st: PlanStep):
+            st_t0 = time.perf_counter()
             res = await execute_single_step(st, step_outputs, registry)
-            return st, res
+            st_duration = round((time.perf_counter() - st_t0) * 1000, 2)
+            return st, res, st_duration
 
         batch_results = await asyncio.gather(*(run_step(s) for s in ready_steps))
 
-        for step, res in batch_results:
+        for step, res, st_duration in batch_results:
             step_id_key = step.id or step.step_id or "step"
             op = step.operation or step.operation_name or "unknown"
+            tool_timings_ms[step_id_key] = st_duration
 
             # Cache under canonical id and aliases
             step_outputs[step_id_key] = res
@@ -196,6 +215,7 @@ async def executor_node(state: MarineState) -> Dict[str, Any]:
                 "result": res,
                 "status": res.get("status", "success"),
                 "partial": res.get("partial", False),
+                "duration_ms": st_duration,
             }
 
             # Map to tool_results / analytics_results for downstream evidence assembly
@@ -208,8 +228,41 @@ async def executor_node(state: MarineState) -> Dict[str, Any]:
             else:
                 analytics_results.append(result_entry)
 
-    return {
+    # Extract decision output if available
+    decision_obj: Optional[Dict[str, Any]] = state.get("decision")
+    for entry in analytics_results:
+        op = entry.get("operation")
+        res = entry.get("result", {})
+        data = res.get("data", {})
+        if op in ("select_safe_fishing_zone", "select_best_zone"):
+            decision_obj = data
+            break
+        elif op in ("rank_zones", "calculate_zone_ranking") and not decision_obj:
+            decision_obj = data
+
+    executor_total_ms = round((time.perf_counter() - t0) * 1000, 2)
+    latency_telemetry = dict(state.get("latency_telemetry") or {})
+    latency_telemetry["executor_ms"] = executor_total_ms
+    latency_telemetry["tool_timings_ms"] = tool_timings_ms
+
+    return_state: Dict[str, Any] = {
         "tool_results": tool_results,
         "analytics_results": analytics_results,
         "errors": errors,
+        "latency_telemetry": latency_telemetry,
     }
+
+    if decision_obj:
+        return_state["decision"] = decision_obj
+        if "selected_zone" in decision_obj:
+            return_state["selected_zone"] = decision_obj.get("selected_zone")
+        if "rejected_zones" in decision_obj:
+            return_state["rejected_zones"] = decision_obj.get("rejected_zones")
+        if "ranked_zones" in decision_obj:
+            return_state["ranked_zones"] = decision_obj.get("ranked_zones")
+        if "all_evaluations" in decision_obj:
+            return_state["all_evaluations"] = decision_obj.get("all_evaluations")
+        if "decision_policy" in decision_obj:
+            return_state["decision_policy"] = decision_obj.get("decision_policy")
+
+    return return_state

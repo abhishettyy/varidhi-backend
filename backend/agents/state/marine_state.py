@@ -80,6 +80,14 @@ class MarineState(TypedDict, total=False):
     fallback_mode: Optional[bool]
     is_terminal: Optional[bool]
 
+    # Phase 6D/6E Decision Synthesis convenience fields
+    selected_zone: Optional[Dict[str, Any]]
+    rejected_zones: Optional[List[Dict[str, Any]]]
+    ranked_zones: Optional[List[Dict[str, Any]]]
+    all_evaluations: Optional[List[Dict[str, Any]]]
+    decision_policy: Optional[Dict[str, Any]]
+
 
 # Alias AgentState for backwards compatibility
 AgentState = MarineState
+

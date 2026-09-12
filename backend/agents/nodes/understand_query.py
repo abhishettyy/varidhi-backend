@@ -397,9 +397,9 @@ def classify_intent(lower_query: str) -> Tuple[str, float]:
     """
     # 1. Historical Analysis
     if any(k in lower_query for k in [
-        "last 30 days", "last 7 days", "past month", "last month", "last year",
-        "historical", "past data", "archive", "climatology", "trends in 20", "records for"
-    ]):
+        "last 30 days", "last 7 days", "past month", "last month", "last year", "last 5 years", "last 10 years",
+        "historical", "past data", "archive", "climatology", "trends in 20", "records for", "over the last", "historical trends"
+    ]) or re.search(r"\b(?:last|past)\s+\d+\s+(?:years|months|days|decades)\b", lower_query):
         return MarineIntent.HISTORICAL_ANALYSIS.value, 0.95
 
     # 2. Vessel Query
@@ -457,15 +457,109 @@ def classify_intent(lower_query: str) -> Tuple[str, float]:
     return MarineIntent.GENERAL_MARINE_QUERY.value, 0.70
 
 
+import logging
+import time
+from backend.agents.llm.base import classify_llm_error
+from backend.agents.llm.factory import get_llm_provider
+from backend.agents.llm.providers.fake_provider import FakeLLMProvider
+from backend.agents.prompts.extraction_prompts import STRUCTURED_QUERY_UNDERSTANDING_PROMPT
+from backend.agents.prompts.system_prompts import MARINE_SYSTEM_DIRECTIVE
+
+logger = logging.getLogger(__name__)
+
+
 async def understand_query_node(state: MarineState) -> Dict[str, Any]:
     """
     LangGraph node: Parses user query into structured QueryIntent, location, time range,
     marine variables, vessel, route, and operational constraints.
-    Deterministic, lightweight, and never invents missing information.
+    Supports LLM-backed extraction with 100% deterministic fallback and latency telemetry.
     """
+    t0 = time.perf_counter()
     query = state.get("query", "") or state.get("raw_query", "")
     lower_query = query.lower().strip()
 
+    llm_used = False
+    llm_fallback = False
+    llm_fallback_reason: Optional[str] = None
+
+    # Check if LLM extraction should be attempted
+    llm = get_llm_provider()
+    attempt_llm = False
+    if state.get("use_llm") is True:
+        attempt_llm = True
+    elif llm.provider_name in ("gemini", "openai"):
+        attempt_llm = True
+    elif isinstance(llm, FakeLLMProvider) and (llm.canned_structured is not None or llm.error_mode is not None):
+        attempt_llm = True
+
+    if attempt_llm and query:
+        try:
+            extracted_intent: QueryIntent = await llm.generate_structured(
+                prompt=STRUCTURED_QUERY_UNDERSTANDING_PROMPT.format(query=query),
+                schema_class=QueryIntent,
+                system_prompt=MARINE_SYSTEM_DIRECTIVE,
+            )
+            # Enrich location if name matches known ports and coords are missing
+            loc_obj = getattr(extracted_intent, "location", None)
+            if loc_obj:
+                loc_name = getattr(loc_obj, "name", None) if hasattr(loc_obj, "name") else (loc_obj.get("name") if isinstance(loc_obj, dict) else None)
+                if loc_name:
+                    loc_key = loc_name.lower().strip()
+                    if loc_key in KNOWN_COASTAL_LOCATIONS:
+                        known = KNOWN_COASTAL_LOCATIONS[loc_key]
+                        if hasattr(loc_obj, "latitude"):
+                            if getattr(loc_obj, "latitude", None) is None:
+                                loc_obj.latitude = known["latitude"]
+                            if getattr(loc_obj, "longitude", None) is None:
+                                loc_obj.longitude = known["longitude"]
+                            if not getattr(loc_obj, "harbor", None) and known.get("harbor"):
+                                loc_obj.harbor = known.get("harbor")
+                            if not getattr(loc_obj, "region", None) and known.get("region"):
+                                loc_obj.region = known.get("region")
+                        elif isinstance(loc_obj, dict):
+                            if loc_obj.get("latitude") is None:
+                                loc_obj["latitude"] = known["latitude"]
+                            if loc_obj.get("longitude") is None:
+                                loc_obj["longitude"] = known["longitude"]
+                            if not loc_obj.get("harbor") and known.get("harbor"):
+                                loc_obj["harbor"] = known.get("harbor")
+                            if not loc_obj.get("region") and known.get("region"):
+                                loc_obj["region"] = known.get("region")
+
+            if hasattr(extracted_intent, "raw_query") and not extracted_intent.raw_query:
+                extracted_intent.raw_query = query
+            elif isinstance(extracted_intent, dict) and not extracted_intent.get("raw_query"):
+                extracted_intent["raw_query"] = query
+
+            query_intent_dict = extracted_intent.model_dump() if hasattr(extracted_intent, "model_dump") else extracted_intent
+            latency_ms = round((time.perf_counter() - t0) * 1000, 2)
+            latency_telemetry = dict(state.get("latency_telemetry") or {})
+            latency_telemetry["understand_query_ms"] = latency_ms
+
+            return {
+                "intent": getattr(extracted_intent, "intent", query_intent_dict.get("intent")),
+                "confidence": getattr(extracted_intent, "confidence", query_intent_dict.get("confidence")),
+                "location": query_intent_dict.get("location"),
+                "time_range": query_intent_dict.get("time_range"),
+                "variables": getattr(extracted_intent, "variables", query_intent_dict.get("variables")),
+                "vessel": query_intent_dict.get("vessel"),
+                "route": query_intent_dict.get("route"),
+                "constraints": getattr(extracted_intent, "constraints", query_intent_dict.get("constraints")),
+                "query_intent": query_intent_dict,
+                "structured_query": query_intent_dict,
+                "llm_used": True,
+                "llm_fallback": False,
+                "llm_provider": llm.provider_name,
+                "llm_model": llm.model_name,
+                "latency_telemetry": latency_telemetry,
+            }
+        except Exception as e:
+            classified_err = classify_llm_error(e)
+            logger.debug(f"LLM query understanding fallback triggered: {classified_err} ({type(e).__name__})")
+            llm_fallback = True
+            llm_fallback_reason = classified_err
+
+    # Deterministic Rule-Based Fallback Parser
     # 1. Intent Detection
     intent, confidence = classify_intent(lower_query)
 
@@ -505,8 +599,13 @@ async def understand_query_node(state: MarineState) -> Dict[str, Any]:
     )
 
     query_intent_dict = query_intent.model_dump()
+    latency_ms = round((time.perf_counter() - t0) * 1000, 2)
+    latency_telemetry = dict(state.get("latency_telemetry") or {})
+    if "pipeline_start_perf" not in latency_telemetry:
+        latency_telemetry["pipeline_start_perf"] = t0
+    latency_telemetry["understand_query_ms"] = latency_ms
 
-    return {
+    result_dict = {
         "intent": intent,
         "confidence": confidence,
         "location": location_dict,
@@ -517,9 +616,19 @@ async def understand_query_node(state: MarineState) -> Dict[str, Any]:
         "constraints": constraints,
         "query_intent": query_intent_dict,
         "structured_query": query_intent_dict,
+        "llm_used": llm_used,
+        "llm_fallback": llm_fallback,
+        "llm_provider": llm.provider_name if llm else "none",
+        "llm_model": llm.model_name if llm else "none",
+        "latency_telemetry": latency_telemetry,
     }
+    if llm_fallback_reason:
+        result_dict["llm_fallback_reason"] = llm_fallback_reason
+
+    return result_dict
 
 
 # Backwards compatibility aliases
 understand_query = understand_query_node
 query_understanding_node = understand_query_node
+

@@ -19,6 +19,8 @@ class EvidenceType(str, Enum):
     CURRENT_AND_TIDE = "current_and_tide"
     RISK_INDEX_CALCULATION = "risk_index_calculation"
     PFZ_ZONE_ANALYTICS = "pfz_zone_analytics"
+    REGULATORY_RESTRICTION = "regulatory_restriction"
+    DECISION_SYNTHESIS = "decision_synthesis"
     HAZARD_BULLETIN = "hazard_bulletin"
     BATHYMETRY_DEPTH = "bathymetry_depth"
     GENERAL_OBSERVATION = "general_observation"

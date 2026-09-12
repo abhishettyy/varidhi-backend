@@ -1,4 +1,5 @@
 @import 'maplibre-gl/dist/maplibre-gl.css';
+@import 'leaflet/dist/leaflet.css';
 
 :root {
   /* ===================================================
@@ -446,5 +447,145 @@ html {
 /* Animate spin utility for Lucide icons */
 .animate-spin {
   animation: varSpin 1s linear infinite;
+}
+
+/* ===================================================
+   COASTAL MARINE PALETTE & LEAFLET MAP STYLES
+   =================================================== */
+:root {
+  --color-sea: #f5fbfd;
+  --color-surface: #ffffff;
+  --color-primary: #087ea4;
+  --color-primary-hover: #05627f;
+  --color-secondary: #35b8c8;
+  --color-accent: #ff7666;
+  --color-success: #3faf8f;
+  --color-warn: #e8a93c;
+  --color-danger: #d6334c;
+  --color-ink: #12313b;
+  --color-ink-2: #607d86;
+  --color-ink-3: #8fa7b0;
+  --color-line: #d8e9ee;
+  --color-line-strong: #bbd6df;
+  --color-tint: #e3f7f8;
+  --color-water: #dceef3;
+
+  --shadow-soft: 0 1px 2px rgba(18, 49, 59, 0.06);
+  --shadow-card: 0 4px 14px rgba(18, 49, 59, 0.09);
+  --shadow-float: 0 14px 40px rgba(18, 49, 59, 0.16);
+
+  --radius-card: 10px;
+}
+
+.bg-sea { background-color: var(--color-sea); }
+.bg-surface { background-color: var(--color-surface); }
+.bg-tint { background-color: var(--color-tint); }
+.bg-water { background-color: var(--color-water); }
+.text-ink { color: var(--color-ink); }
+.text-ink-2 { color: var(--color-ink-2); }
+.text-ink-3 { color: var(--color-ink-3); }
+.text-primary { color: var(--color-primary); }
+.text-accent { color: var(--color-accent); }
+.border-line { border-color: var(--color-line); }
+.border-line-strong { border-color: var(--color-line-strong); }
+.shadow-card { box-shadow: var(--shadow-card); }
+.shadow-soft { box-shadow: var(--shadow-soft); }
+.shadow-float { box-shadow: var(--shadow-float); }
+
+.eyebrow {
+  font-family: var(--font-abc-diatype-mono), ui-monospace, monospace;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.shimmer-text {
+  background-image: linear-gradient(90deg, #8fa7b0 0%, #8fa7b0 40%, #087ea4 50%, #8fa7b0 60%, #8fa7b0 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: varShimmer 2.2s linear infinite;
+}
+
+@keyframes varShimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+@keyframes ping-slow {
+  0% { transform: scale(1); opacity: 0.5; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+/* ------------------------------------------------------------ leaflet */
+.leaflet-container { font-family: inherit; background: var(--color-water); }
+.leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.86) !important;
+  color: var(--color-ink-3) !important;
+  font-family: var(--font-abc-diatype-mono), ui-monospace, monospace;
+  font-size: 9px !important;
+  border-radius: 6px 0 0 0;
+}
+.leaflet-control-attribution a { color: var(--color-ink-2) !important; }
+.leaflet-control-scale-line {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: var(--color-line-strong) !important;
+  color: var(--color-ink-2) !important;
+  font-family: var(--font-abc-diatype-mono), ui-monospace, monospace;
+  font-size: 10px !important;
+  border-radius: 0 4px 4px 0;
+}
+.leaflet-popup-content-wrapper {
+  border-radius: 10px;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--color-line);
+  color: var(--color-ink);
+}
+.leaflet-popup-content { margin: 10px 13px; font-size: 12px; line-height: 1.5; }
+.leaflet-tooltip {
+  border-radius: 7px;
+  border: 1px solid var(--color-line);
+  box-shadow: var(--shadow-card);
+  color: var(--color-ink);
+  font-size: 11.5px;
+  font-weight: 500;
+}
+.orca-field-pane { transition: opacity 0.16s ease; }
+
+/* map pins (Leaflet divIcon markup is plain HTML) */
+.pfz-pin { cursor: pointer; }
+.pfz-dot {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 7px rgba(18, 49, 59, 0.28);
+}
+.ground-chip {
+  position: absolute; top: 31px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 4px;
+  padding: 2px 7px; border-radius: 6px;
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(18, 49, 59, 0.2);
+  font-size: 10.5px; font-weight: 600; white-space: nowrap;
+}
+.agent-pin {
+  display: grid; place-items: center;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: #087ea4; color: #fff;
+  border: 2.5px solid #fff;
+  box-shadow: 0 3px 10px rgba(8, 126, 164, 0.45);
+  font-family: var(--font-abc-diatype-mono), monospace; font-size: 11px; font-weight: 700;
+}
+.boat { position: relative; width: 22px; height: 22px; cursor: grab; }
+.boat-pulse {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 2px solid #087ea4;
+  animation: ping-slow 2.4s ease-out infinite;
 }
 

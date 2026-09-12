@@ -18,6 +18,9 @@ interface ChatPanelProps {
   defaultExpanded?: boolean;
   onFocusZone?: (zoneId: string) => void;
   onViewLayer?: (layerKey: string) => void;
+  onVisualPayload?: (payload: any) => void;
+  pendingQuery?: string | null;
+  onClearPendingQuery?: () => void;
   initialMessage?: string;
 }
 
@@ -38,6 +41,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   defaultExpanded = true,
   onFocusZone,
   onViewLayer,
+  onVisualPayload,
+  pendingQuery,
+  onClearPendingQuery,
   initialMessage,
 }) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
@@ -58,6 +64,13 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isLoading]);
+
+  useEffect(() => {
+    if (pendingQuery && !isLoading) {
+      handleSendMessage(pendingQuery);
+      if (onClearPendingQuery) onClearPendingQuery();
+    }
+  }, [pendingQuery]);
 
   const handleSendMessage = async (text: string) => {
     const userMsg: ChatMessageItem = {
@@ -83,11 +96,16 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
       setMessages((prev) => [...prev, aiMsg]);
 
-      if (response.visual_payload?.focus_zone_id && onFocusZone) {
-        onFocusZone(response.visual_payload.focus_zone_id);
-      }
-      if (response.visual_payload?.highlight_layer && onViewLayer) {
-        onViewLayer(response.visual_payload.highlight_layer);
+      if (response.visual_payload) {
+        if (onVisualPayload) {
+          onVisualPayload(response.visual_payload);
+        }
+        if (response.visual_payload.focus_zone_id && onFocusZone) {
+          onFocusZone(response.visual_payload.focus_zone_id);
+        }
+        if (response.visual_payload.highlight_layer && onViewLayer) {
+          onViewLayer(response.visual_payload.highlight_layer);
+        }
       }
     } catch {
       const errorMsg: ChatMessageItem = {

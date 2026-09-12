@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import dynamic from 'next/dynamic';
+import type { FeatureCollection } from 'geojson';
 import { FishermanHeader } from './FishermanHeader';
-import { FishermanMap } from './FishermanMap';
 import { RecommendationCard } from './RecommendationCard';
 import { AlternativeZoneCard } from './AlternativeZoneCard';
 import { SafetyCard } from './SafetyCard';
@@ -10,25 +11,54 @@ import { SeaConditions } from './SeaConditions';
 import { QuickActions } from './QuickActions';
 import { WhyRecommendation } from './WhyRecommendation';
 import { ChatPanel } from '@/components/chat/ChatPanel';
+import { MapHud } from '@/components/console/MapHud';
+import { SpotCard } from '@/components/console/SpotCard';
+import type { Conditions, MapApi, SpotEvent } from '@/components/console/types';
+import { OVERLAYS } from '@/lib/marine/data';
+import { compass, sampleField, seaState } from '@/lib/marine/field';
+import type { FieldKey, LatLon, MarkerKey } from '@/lib/marine/types';
 import { FISHERMAN_QUICK_PROMPTS } from '@/services/api/chatApi';
 import { fetchFishingZones } from '@/services/api/marineApi';
-import {
-  getMockZones,
-  getMockUserLocation,
-  getMockPfzGeoJSON,
-  getMockRestrictionsGeoJSON,
-  getMockWeatherGeoJSON,
-} from '@/services/api/mockData';
+import { getMockZones, getMockUserLocation } from '@/services/api/mockData';
 import { FishingZone } from '@/types/marine';
 import { Drawer } from '@/components/common/Drawer';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, Wind, Waves, Compass, Thermometer, Sparkles } from 'lucide-react';
+
+// Leaflet canvas particle map dynamically imported without SSR
+const MarineMapLeaflet = dynamic(() => import('@/components/map/MarineMapLeaflet'), {
+  ssr: false,
+  loading: () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        display: 'grid',
+        placeItems: 'center',
+        backgroundColor: '#dceef3',
+      }}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+        <div
+          style={{
+            width: '32px',
+            height: '32px',
+            borderRadius: '50%',
+            border: '3px solid #087ea4',
+            borderTopColor: 'transparent',
+            animation: 'varSpin 1s linear infinite',
+          }}
+        />
+        <span className="shimmer-text" style={{ fontFamily: 'var(--font-abc-diatype-mono), monospace', fontSize: '11px', fontWeight: 600, letterSpacing: '0.12em' }}>
+          LOADING MARINE CARTOGRAPHY & PARTICLE VECTOR ENGINE...
+        </span>
+      </div>
+    </div>
+  ),
+});
 
 export const FishermanWorkspace: React.FC = () => {
   const [zones, setZones] = useState<FishingZone[]>(() => getMockZones());
   const userLocation = getMockUserLocation();
-  const pfzData = getMockPfzGeoJSON();
-  const restrictionsData = getMockRestrictionsGeoJSON();
-  const weatherData = getMockWeatherGeoJSON();
 
   const [selectedZone, setSelectedZone] = useState<FishingZone>(() => {
     const defaultZones = getMockZones();
@@ -38,6 +68,37 @@ export const FishermanWorkspace: React.FC = () => {
   const [showAlertsDrawer, setShowAlertsDrawer] = useState(false);
   const [activeTab, setActiveTab] = useState<'advisory' | 'chat' | 'conditions'>('advisory');
 
+  // Marine Map & Particle Engine State
+  const [overlay, setOverlay] = useState<FieldKey>('waves');
+  const [simple, setSimple] = useState<boolean>(true);
+  const [particles, setParticles] = useState<boolean>(true);
+  const [values, setValues] = useState<boolean>(false);
+  const [markers, setMarkers] = useState<Record<MarkerKey, boolean>>({
+    pfz: true,
+    risk: true,
+    restricted: true,
+    cyclone: true,
+    vessels: true,
+  });
+  const [home, setHome] = useState<LatLon>({
+    lat: userLocation.latitude,
+    lon: userLocation.longitude,
+  });
+  const [spot, setSpot] = useState<SpotEvent | null>(null);
+  const [features, setFeatures] = useState<FeatureCollection | null>(null);
+  const [pendingQuery, setPendingQuery] = useState<string | null>(null);
+  const [dataVersion, setDataVersion] = useState(0);
+
+  const mapApi = useRef<MapApi | null>(null);
+
+  // Live simulation tick
+  const [t, setT] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setT((prev) => prev + 0.05), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Fetch real backend fishing zones from P5/P6
   useEffect(() => {
     let mounted = true;
     fetchFishingZones(userLocation.latitude, userLocation.longitude).then((backendZones) => {
@@ -56,15 +117,47 @@ export const FishermanWorkspace: React.FC = () => {
   const recommendedZone = zones.find((z) => z.id === 'ZONE_B' || z.status === 'recommended') || zones[0];
   const alternativeZones = zones.filter((z) => z.id !== recommendedZone.id);
 
-  const handleSelectZone = (zone: FishingZone) => {
+  const handleSelectZone = useCallback((zone: FishingZone) => {
     setSelectedZone(zone);
-  };
+    if (mapApi.current && zone.coordinates) {
+      const [zLon, zLat] = zone.coordinates;
+      mapApi.current.panTo({ lat: zLat, lon: zLon }, 11);
+    }
+  }, []);
 
-  const handleFocusZoneById = (zoneId: string) => {
+  const handleFocusZoneById = useCallback((zoneId: string) => {
     const found = zones.find((z) => z.id === zoneId);
-    if (found) setSelectedZone(found);
-  };
+    if (found) handleSelectZone(found);
+  }, [zones, handleSelectZone]);
 
+  // Calculate live conditions at home / boat position for the HUD
+  const homeConditions: Conditions = useMemo(() => {
+    const wv = sampleField('waves', home.lon, home.lat, t, 0);
+    const wd = sampleField('wind', home.lon, home.lat, t, 0);
+    const cu = sampleField('currents', home.lon, home.lat, t, 0);
+    const st = sampleField('sst', home.lon, home.lat, t, 0);
+    return {
+      wave: wv.v,
+      swell: compass(wv.u, wv.w),
+      windKmh: Math.round(wd.v * 3.6),
+      current: cu.v,
+      sst: st.v,
+      state: seaState(wv.v),
+    };
+  }, [home.lat, home.lon, t]);
+
+  const handleSpotSample = useCallback(
+    (key: FieldKey, lon: number, lat: number) => sampleField(key, lon, lat, t, 0),
+    [t]
+  );
+
+  const handleAskSpotConditions = useCallback(() => {
+    if (!spot) return;
+    const query = `What are the marine conditions and safety assessment at coordinates ${spot.lat.toFixed(3)}°N, ${spot.lon.toFixed(3)}°E? Is it safe to fish there today?`;
+    setPendingQuery(query);
+    setActiveTab('chat');
+    setSpot(null);
+  }, [spot]);
 
   return (
     <div
@@ -76,7 +169,7 @@ export const FishermanWorkspace: React.FC = () => {
         backgroundColor: '#f6f3f1',
         color: '#242424',
         overflow: 'hidden',
-        fontFamily: 'var(--font-abc-diatype-mono), monospace',
+        fontFamily: 'var(--font-sans), sans-serif',
       }}
     >
       {/* 1. Header */}
@@ -138,8 +231,6 @@ export const FishermanWorkspace: React.FC = () => {
                       transition: 'all 0.2s ease',
                       textTransform: 'uppercase',
                       letterSpacing: '0.04em',
-                      boxShadow: active ? '0 1px 4px rgba(36,36,36,0.1)' : 'none',
-                      fontFamily: 'inherit',
                     }}
                   >
                     {labels[tab]}
@@ -149,47 +240,69 @@ export const FishermanWorkspace: React.FC = () => {
             </div>
           </div>
 
-          {/* Tab Content Panels */}
+          {/* Panel Scrollable Content */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {activeTab === 'advisory' && (
               <>
-                {/* 1. Quick Prompts / Actions */}
-                <QuickActions
-                  onTriggerAction={(query) => {
-                    setActiveTab('chat');
-                  }}
-                />
-
-                {/* 2. Top Recommended Destination Card */}
                 <RecommendationCard
                   zone={recommendedZone}
                   onWhyThisZone={() => setShowWhyModal(true)}
-                  onViewOnMap={() => handleSelectZone(recommendedZone)}
+                  onNavigate={() => alert(`Navigating to ${recommendedZone.name}`)}
                 />
 
-                {/* 3. Why Recommendation Expandable if requested */}
+                {/* Why Modal */}
                 {showWhyModal && (
-                  <WhyRecommendation
-                    zone={recommendedZone}
-                    onClose={() => setShowWhyModal(false)}
-                  />
+                  <div
+                    style={{
+                      position: 'fixed',
+                      inset: 0,
+                      backgroundColor: 'rgba(36, 36, 36, 0.4)',
+                      backdropFilter: 'blur(4px)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      zIndex: 1000,
+                      padding: '20px',
+                    }}
+                    onClick={() => setShowWhyModal(false)}
+                  >
+                    <div
+                      style={{
+                        backgroundColor: '#f6f3f1',
+                        border: '1px solid #cecac8',
+                        borderRadius: '12px',
+                        maxWidth: '560px',
+                        width: '100%',
+                        maxHeight: '90vh',
+                        overflowY: 'auto',
+                        padding: '24px',
+                        boxShadow: '0 20px 40px rgba(36,36,36,0.2)',
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <WhyRecommendation
+                        zone={recommendedZone}
+                        onClose={() => setShowWhyModal(false)}
+                      />
+                    </div>
+                  </div>
                 )}
 
-                {/* 4. Safety Overview Card */}
-                <SafetyCard />
-
-                {/* 5. Alternative / Disqualified Zones List */}
+                {/* Alternative Zones List */}
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                    <span style={{ fontSize: '10px', color: '#767371', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      CANDIDATE ZONES ({alternativeZones.length})
-                    </span>
-                    <span style={{ fontSize: '10px', color: '#2b59d1', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                      SAFETY EVALUATIONS
-                    </span>
+                  <div
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                      color: '#767371',
+                      marginBottom: '10px',
+                    }}
+                  >
+                    Alternative Options
                   </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {alternativeZones.map((z) => (
                       <AlternativeZoneCard
                         key={z.id}
@@ -210,6 +323,13 @@ export const FishermanWorkspace: React.FC = () => {
                 subtitle="Ask questions regarding zones, legal checks & sea conditions"
                 defaultExpanded={true}
                 onFocusZone={handleFocusZoneById}
+                onVisualPayload={(payload) => {
+                  if (payload?.map_features_geojson) {
+                    setFeatures(payload.map_features_geojson);
+                  }
+                }}
+                pendingQuery={pendingQuery}
+                onClearPendingQuery={() => setPendingQuery(null)}
               />
             )}
 
@@ -222,37 +342,155 @@ export const FishermanWorkspace: React.FC = () => {
           </div>
         </aside>
 
-        {/* Right Side: MapLibre GIS Map View */}
-        <main style={{ flex: 1, position: 'relative', height: '100%' }}>
-          <FishermanMap
-            zones={zones}
-            userLocation={userLocation}
-            pfzData={pfzData}
-            restrictionsData={restrictionsData}
-            weatherData={weatherData}
+        {/* Right Side: Leaflet + Canvas Flow Map */}
+        <main style={{ flex: 1, position: 'relative', height: '100%', overflow: 'hidden' }}>
+          {/* 1. Core Interactive Leaflet Map */}
+          <MarineMapLeaflet
+            overlay={overlay}
+            simple={simple}
+            particles={particles}
+            values={values}
+            t={t}
+            hour={0}
+            dataVersion={dataVersion}
+            markers={markers}
+            home={home}
+            features={features}
+            backendZones={zones}
             selectedZoneId={selectedZone?.id}
             onSelectZone={handleSelectZone}
+            onHomeChange={setHome}
+            onSpot={setSpot}
+            apiRef={mapApi}
           />
 
-          {/* Floating AI Query Bar */}
+          {/* 2. Floating Marine HUD (GPS Position, Conditions & Zoom) */}
+          <MapHud
+            overlay={overlay}
+            simple={simple}
+            particles={particles}
+            timeTag="LIVE NOW"
+            home={home}
+            cond={homeConditions}
+            onLocate={() => {
+              const defaultLoc = { lat: userLocation.latitude, lon: userLocation.longitude };
+              setHome(defaultLoc);
+              mapApi.current?.panTo(defaultLoc, 10);
+            }}
+            onZoom={(d) => mapApi.current?.zoomBy(d)}
+          />
+
+          {/* 3. Floating Overlay Toolbar (Waves, Wind, Currents, SST, Chl-a) */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 14,
+              right: 68,
+              zIndex: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(8px)',
+              padding: '4px 6px',
+              borderRadius: '10px',
+              border: '1px solid #d8e9ee',
+              boxShadow: '0 4px 14px rgba(18, 49, 59, 0.09)',
+            }}
+          >
+            {OVERLAYS.map((o) => {
+              const active = overlay === o.key;
+              return (
+                <button
+                  key={o.key}
+                  type="button"
+                  onClick={() => setOverlay(o.key)}
+                  style={{
+                    padding: '5px 10px',
+                    borderRadius: '7px',
+                    fontSize: '11px',
+                    fontWeight: active ? 600 : 500,
+                    border: 'none',
+                    backgroundColor: active ? '#087ea4' : 'transparent',
+                    color: active ? '#ffffff' : '#607d86',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <span
+                    style={{
+                      width: '6px',
+                      height: '6px',
+                      borderRadius: '50%',
+                      backgroundColor: active ? '#ffffff' : o.swatch,
+                    }}
+                  />
+                  <span>{o.label}</span>
+                </button>
+              );
+            })}
+
+            {/* Particle Flow Toggle */}
+            <div style={{ width: '1px', height: '18px', backgroundColor: '#d8e9ee', margin: '0 2px' }} />
+            <button
+              type="button"
+              onClick={() => setParticles((p) => !p)}
+              title={particles ? "Turn off vector flow arrows" : "Turn on vector flow arrows"}
+              style={{
+                padding: '5px 8px',
+                borderRadius: '7px',
+                fontSize: '10.5px',
+                fontWeight: particles ? 600 : 500,
+                border: 'none',
+                backgroundColor: particles ? '#e3f7f8' : 'transparent',
+                color: particles ? '#087ea4' : '#8fa7b0',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              <Wind size={12} />
+              <span>Flow</span>
+            </button>
+          </div>
+
+          {/* 4. Click Spot Inspector Card */}
+          {spot && (
+            <SpotCard
+              spot={spot}
+              sample={handleSpotSample}
+              onClose={() => setSpot(null)}
+              onSetHome={() => {
+                setHome({ lat: spot.lat, lon: spot.lon });
+                setSpot(null);
+              }}
+              onAsk={handleAskSpotConditions}
+            />
+          )}
+
+          {/* 5. Floating Bottom AI & Selected Zone Bar */}
           <div
             style={{
               position: 'absolute',
               bottom: 24,
               left: '50%',
               transform: 'translateX(-50%)',
-              width: 'min(92%, 520px)',
-              zIndex: 10,
+              width: 'min(92%, 560px)',
+              zIndex: 600,
             }}
           >
             <div
               style={{
-                padding: '10px 10px 10px 20px',
-                backgroundColor: 'rgba(246, 243, 241, 0.96)',
+                padding: '10px 12px 10px 20px',
+                backgroundColor: 'rgba(255, 255, 255, 0.96)',
                 backdropFilter: 'blur(12px)',
-                border: '1px solid #cecac8',
+                border: '1px solid #d8e9ee',
                 borderRadius: '100px',
-                boxShadow: '0 8px 24px rgba(36, 36, 36, 0.12), 0 2px 8px rgba(36,36,36,0.06)',
+                boxShadow: '0 12px 32px rgba(18, 49, 59, 0.16)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -262,25 +500,39 @@ export const FishermanWorkspace: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                 <div
                   style={{
-                    width: 8,
-                    height: 8,
+                    width: 9,
+                    height: 9,
                     borderRadius: '50%',
-                    backgroundColor: '#2b59d1',
+                    backgroundColor: selectedZone?.status === 'recommended' ? '#3faf8f' : selectedZone?.status === 'restricted' ? '#d6334c' : '#e8a93c',
                     flexShrink: 0,
-                    boxShadow: '0 0 0 3px rgba(43,89,209,0.15)',
+                    boxShadow: '0 0 0 3px rgba(8,126,164,0.15)',
                   }}
                 />
                 <span
                   style={{
-                    fontSize: '12px',
-                    color: '#242424',
-                    fontWeight: 500,
+                    fontSize: '12.5px',
+                    color: '#12313b',
+                    fontWeight: 600,
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                   }}
                 >
-                  {selectedZone?.name} · {selectedZone?.distance_km} km {selectedZone?.bearing}
+                  {selectedZone?.name} · {selectedZone?.distance_km} km {selectedZone?.bearing || ''}
+                </span>
+                <span
+                  style={{
+                    fontSize: '10px',
+                    padding: '2px 7px',
+                    borderRadius: '100px',
+                    backgroundColor: selectedZone?.status === 'recommended' ? '#e6f6f0' : '#fdf3e1',
+                    color: selectedZone?.status === 'recommended' ? '#2a8a6e' : '#a86b12',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  {selectedZone?.status}
                 </span>
               </div>
 
@@ -295,8 +547,8 @@ export const FishermanWorkspace: React.FC = () => {
                   fontWeight: 600,
                   padding: '8px 18px',
                   borderRadius: '100px',
-                  backgroundColor: '#242424',
-                  color: '#f6f3f1',
+                  backgroundColor: '#087ea4',
+                  color: '#ffffff',
                   border: 'none',
                   cursor: 'pointer',
                   textTransform: 'uppercase',
@@ -305,7 +557,7 @@ export const FishermanWorkspace: React.FC = () => {
                   flexShrink: 0,
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.opacity = '0.85';
+                  e.currentTarget.style.opacity = '0.9';
                   e.currentTarget.style.transform = 'scale(1.02)';
                 }}
                 onMouseLeave={(e) => {
@@ -313,8 +565,8 @@ export const FishermanWorkspace: React.FC = () => {
                   e.currentTarget.style.transform = 'scale(1)';
                 }}
               >
-                <MessageSquare size={12} />
-                <span>Ask AI ▸</span>
+                <Sparkles size={13} />
+                <span>Ask AI Assistant ▸</span>
               </button>
             </div>
           </div>

@@ -1,5 +1,6 @@
 """Planner node: converts normalized QueryIntent into a structured, dependency-aware ExecutionPlan."""
 
+import time
 import uuid
 from typing import Any, Dict, List, Optional
 
@@ -977,6 +978,7 @@ async def planner_node(state: MarineState) -> Dict[str, Any]:
     route = state.get("route")
     constraints = state.get("constraints", {}) or {}
 
+    t0 = time.perf_counter()
     # Build intent-specific structured ExecutionPlan
     if intent == MarineIntent.FISHING_RECOMMENDATION.value:
         exec_plan = build_fishing_recommendation_plan(location, time_range, variables, vessel, constraints)
@@ -1008,10 +1010,15 @@ async def planner_node(state: MarineState) -> Dict[str, Any]:
     else:
         plan_list = step_tokens
 
+    latency_ms = round((time.perf_counter() - t0) * 1000, 2)
+    latency_telemetry = dict(state.get("latency_telemetry") or {})
+    latency_telemetry["planner_ms"] = latency_ms
+
     return {
         "plan": plan_list,
         "execution_plan": exec_plan,
         "execution_steps": exec_plan.steps,
+        "latency_telemetry": latency_telemetry,
     }
 
 

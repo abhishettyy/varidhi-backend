@@ -1,5 +1,6 @@
 """Tool selection node: validates operation prerequisites and prepares invocation payloads."""
 
+import time
 from typing import Any, Dict, List
 from backend.agents.schemas.plan import PlanStep, ToolExecutionTarget
 from backend.agents.state.marine_state import MarineState
@@ -11,10 +12,11 @@ async def tool_selection_node(state: MarineState) -> Dict[str, Any]:
     Canonical execution flow uses ExecutionPlan.steps directly as the single source of truth.
     Legacy list-of-strings plans are supported solely as a backward-compatibility fallback.
     """
+    t0 = time.perf_counter()
     exec_plan = state.get("execution_plan")
     plan = state.get("plan")
     location = state.get("location") or {}
-    errors = list(state.get("errors", []))
+    errors = list(state.get("errors") or [])
 
     prepared_steps: List[PlanStep] = []
 
@@ -143,7 +145,12 @@ async def tool_selection_node(state: MarineState) -> Dict[str, Any]:
             )
         )
 
+    latency_ms = round((time.perf_counter() - t0) * 1000, 2)
+    latency_telemetry = dict(state.get("latency_telemetry") or {})
+    latency_telemetry["tool_selection_ms"] = latency_ms
+
     return {
         "execution_steps": prepared_steps,
         "errors": errors,
+        "latency_telemetry": latency_telemetry,
     }

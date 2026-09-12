@@ -350,7 +350,11 @@ def calculate_opportunity_from_p4_results(
             if zid:
                 candidate_zones.setdefault(zid, {})
                 candidate_zones[zid]["zone_id"] = zid
-                candidate_zones[zid]["pfz_confidence"] = z.get("confidence")
+                candidate_zones[zid]["pfz_confidence"] = (
+                    z.get("confidence") if z.get("confidence") is not None
+                    else z.get("pfz_confidence") if z.get("pfz_confidence") is not None
+                    else pfz_data.get("confidence")
+                )
                 candidate_zones[zid]["distance_nm"] = z.get("distance_nm")
                 candidate_zones[zid]["bearing"] = z.get("bearing")
                 candidate_zones[zid]["depth_m"] = z.get("depth_m")

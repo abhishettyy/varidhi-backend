@@ -1,5 +1,20 @@
 """Prompt templates for extracting geographic locations, harbors, coordinates, and time windows."""
 
+STRUCTURED_QUERY_UNDERSTANDING_PROMPT = """You are the Marine Natural Language Intelligence Parser.
+Your role is to parse user marine queries into structured query parameters.
+
+### Rules & Guardrails:
+1. Intent: Classify into one of: [FISHING_RECOMMENDATION, PFZ_SEARCH, MARINE_SAFETY, WEATHER_QUERY, HAZARD_QUERY, GEOFENCE_QUERY, ROUTE_QUERY, VESSEL_QUERY, HISTORICAL_ANALYSIS, GENERAL_MARINE_QUERY].
+2. Location: Extract place name, harbor, or coastal region. If explicit coordinates are in the query (e.g. 12.91, 74.85), extract them. If no location is mentioned, leave location null. NEVER invent fake coordinates.
+3. Time Range: Extract temporal phrase (e.g. 'tomorrow morning', 'next 24 hours', 'last 30 days'). Set is_historical=true if referring to past observations.
+4. Marine Variables: Extract only variables explicitly requested or directly relevant to the intent (e.g. SST, CHLOROPHYLL, PFZ, WIND, WAVE, SWELL, TIDE, CURRENT).
+5. Vessel & Route: Extract vessel specs (e.g. 'motorized boat', 'trawler') and route origin/destination if mentioned.
+6. Constraints: Extract limits (e.g. max_wave_height_m, max_wind_speed_knots, max_distance_nm).
+7. Respond ONLY with valid JSON matching the QueryIntent schema.
+
+User Query: "{query}"
+"""
+
 SPATIO_TEMPORAL_EXTRACTION_PROMPT = """Extract the spatial and temporal entities from this marine query.
 
 Spatial Extraction Targets:

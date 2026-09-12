@@ -1,5 +1,6 @@
 """Evidence assembly node: structures multi-source tool and analytic outputs into verifiable evidence."""
 
+import time
 import uuid
 from typing import Any, Dict, List
 
@@ -15,6 +16,7 @@ async def evidence_assembly_node(state: MarineState) -> Dict[str, Any]:
     """
     LangGraph node: Normalizes and structures results from P4 tools and P6 analytics into a coherent EvidenceBundle.
     """
+    t0 = time.perf_counter()
     raw_query = state.get("query", "") or state.get("raw_query", "")
     tool_results = state.get("tool_results", [])
     analytics_results = state.get("analytics_results", [])
@@ -94,14 +96,23 @@ async def evidence_assembly_node(state: MarineState) -> Dict[str, Any]:
                     raw_payload=data,
                 )
             )
-        elif op in ("check_restrictions", "check_geofence"):
-            restricted = data.get("restricted", False)
+        elif op in ("check_restrictions", "check_geofence", "calculate_regulatory_compliance"):
+            blocked_zones = data.get("blocked_zones", [])
+            eligible_zones = data.get("eligible_zones", [])
+            if blocked_zones or eligible_zones:
+                summary = (
+                    f"Regulatory spatial filter: {len(eligible_zones)} eligible zone(s) cleared, "
+                    f"{len(blocked_zones)} zone(s) prohibited by active regulations."
+                )
+            else:
+                restricted = data.get("restricted", False)
+                summary = f"Maritime restrictions check: {'Restricted' if restricted else 'Clear'}"
             evidence_items.append(
                 EvidenceItem(
                     evidence_id=f"ev_{uuid.uuid4().hex[:6]}",
-                    evidence_type=EvidenceType.GENERAL_OBSERVATION,
-                    source=source,
-                    summary=f"Maritime restrictions check: {'Restricted' if restricted else 'Clear'}",
+                    evidence_type=EvidenceType.REGULATORY_RESTRICTION,
+                    source=source or "P6_ANALYTICS_REGULATORY",
+                    summary=summary,
                     metrics=data,
                     spatial_tag=spatial_tag,
                     raw_payload=data,
@@ -154,15 +165,44 @@ async def evidence_assembly_node(state: MarineState) -> Dict[str, Any]:
                     raw_payload=data,
                 )
             )
-        elif op in ("compute_pfz_zones", "calculate_opportunity", "rank_zones"):
-            hotspots = data.get("recommended_hotspots") or data.get("ranked_zones") or data.get("zones", [])
+        elif op in ("compute_pfz_zones", "calculate_opportunity"):
+            hotspots = data.get("recommended_hotspots") or data.get("scored_zones") or data.get("zones", [])
             evidence_items.append(
                 EvidenceItem(
                     evidence_id=f"ev_{uuid.uuid4().hex[:6]}",
                     evidence_type=EvidenceType.PFZ_ZONE_ANALYTICS,
                     source=source,
-                    summary=f"PFZ analysis: {len(hotspots)} active biological convergence hotspot(s).",
-                    metrics={"hotspot_count": len(hotspots), "hotspots": hotspots},
+                    summary=f"PFZ opportunity analysis: {len(hotspots)} active biological convergence hotspot(s).",
+                    metrics={"hotspot_count": len(hotspots), "hotspots": hotspots, **data},
+                    spatial_tag=spatial_tag,
+                    raw_payload=data,
+                )
+            )
+        elif op in ("rank_zones", "calculate_zone_ranking"):
+            ranked = data.get("ranked_zones", [])
+            rejected = data.get("rejected_zones", [])
+            evidence_items.append(
+                EvidenceItem(
+                    evidence_id=f"ev_{uuid.uuid4().hex[:6]}",
+                    evidence_type=EvidenceType.DECISION_SYNTHESIS,
+                    source=source,
+                    summary=f"Zone ranking: {len(ranked)} eligible zone(s) ranked, {len(rejected)} candidate(s) rejected.",
+                    metrics=data,
+                    spatial_tag=spatial_tag,
+                    raw_payload=data,
+                )
+            )
+        elif op in ("select_safe_fishing_zone", "select_best_zone"):
+            selected = data.get("selected_zone") or {}
+            zid = selected.get("zone_id", "N/A")
+            summary_text = data.get("summary") or f"Decision synthesis: Selected {zid} as optimal safe legal zone."
+            evidence_items.append(
+                EvidenceItem(
+                    evidence_id=f"ev_{uuid.uuid4().hex[:6]}",
+                    evidence_type=EvidenceType.DECISION_SYNTHESIS,
+                    source=source,
+                    summary=summary_text,
+                    metrics=data,
                     spatial_tag=spatial_tag,
                     raw_payload=data,
                 )
@@ -189,7 +229,12 @@ async def evidence_assembly_node(state: MarineState) -> Dict[str, Any]:
         missing_indicators=missing_indicators,
     )
 
+    elapsed_ms = (time.perf_counter() - t0) * 1000.0
+    latency_telemetry = dict(state.get("latency_telemetry") or {})
+    latency_telemetry["evidence_assembly_ms"] = round(elapsed_ms, 2)
+
     return {
         "evidence_bundle": bundle,
         "evidence": [item.model_dump() for item in evidence_items],
+        "latency_telemetry": latency_telemetry,
     }

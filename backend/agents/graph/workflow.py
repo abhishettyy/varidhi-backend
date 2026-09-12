@@ -63,13 +63,13 @@ def run_minimal_marine_graph(
     return asyncio.run(run_minimal_marine_graph_async(query, user_type=user_type))
 
 
-async def run_marine_agent_async(
+async def run_marine_agent_state_async(
     query: str,
     role: RoleType = RoleType.GENERAL,
     session_id: Optional[str] = None
-) -> Optional[AgentResponse]:
+) -> MarineState:
     """
-    Execute full marine intelligence agent graph asynchronously for a given query.
+    Execute full marine intelligence agent graph asynchronously and return the complete resulting MarineState.
     """
     graph = get_marine_agent_graph()
 
@@ -83,6 +83,29 @@ async def run_marine_agent_async(
     }
 
     final_state = await graph.ainvoke(initial_state)
+    return final_state
+
+
+def run_marine_agent_state(
+    query: str,
+    role: RoleType = RoleType.GENERAL,
+    session_id: Optional[str] = None
+) -> MarineState:
+    """
+    Synchronous wrapper to execute full marine intelligence agent graph and return complete MarineState.
+    """
+    return asyncio.run(run_marine_agent_state_async(query, role=role, session_id=session_id))
+
+
+async def run_marine_agent_async(
+    query: str,
+    role: RoleType = RoleType.GENERAL,
+    session_id: Optional[str] = None
+) -> Optional[AgentResponse]:
+    """
+    Execute full marine intelligence agent graph asynchronously for a given query.
+    """
+    final_state = await run_marine_agent_state_async(query, role=role, session_id=session_id)
     resp = final_state.get("final_response")
     if resp is None and final_state.get("response"):
         resp_data = final_state.get("response")
@@ -102,3 +125,4 @@ def run_marine_agent(
     Synchronous wrapper for full marine agent workflow.
     """
     return asyncio.run(run_marine_agent_async(query, role=role, session_id=session_id))
+

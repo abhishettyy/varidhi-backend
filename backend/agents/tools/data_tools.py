@@ -34,6 +34,30 @@ def set_restrictions_adapter(adapter: Any) -> None:
     _RESTRICTIONS_ADAPTER = adapter
 
 
+def use_p5_adapters(source: Any = None) -> None:
+    """Serve every P4 data tool from the P5 data API.
+
+    `source` is any P5DataSource; by default the active one from
+    backend.p5.source.get_p5_source() (the mock dataset, or the P5 HTTP
+    service when P5_API_URL is set).
+    """
+    from backend.agents.tools.adapters.p5_adapters import (
+        P5MarineWeatherAdapter, P5OceanAdapter, P5PFZAdapter, P5RestrictionsAdapter,
+    )
+    set_weather_adapter(P5MarineWeatherAdapter(source))
+    set_ocean_adapter(P5OceanAdapter(source))
+    set_pfz_adapter(P5PFZAdapter(source))
+    set_restrictions_adapter(P5RestrictionsAdapter(source))
+
+
+def use_synthetic_adapters() -> None:
+    """Restore the built-in synthetic Mangalore adapters."""
+    set_weather_adapter(SyntheticMarineWeatherAdapter())
+    set_ocean_adapter(SyntheticOceanAdapter())
+    set_pfz_adapter(SyntheticPFZAdapter())
+    set_restrictions_adapter(SyntheticRestrictionsAdapter())
+
+
 # =====================================================================
 # Canonical P4 Tool Implementations
 # =====================================================================
@@ -272,3 +296,34 @@ async def p4_fetch_hazard_bulletins(parameters: Dict[str, Any], dependencies: Di
         },
         "quality": "synthetic_bulletin",
     }
+
+
+async def p4_get_historical_data(parameters: Dict[str, Any], dependencies: Dict[str, Any]) -> Dict[str, Any]:
+    """Retrieve a raw historical time series (no trend analysis — that is P6)."""
+    location = parameters.get("location") or {}
+    fetch = getattr(_OCEAN_ADAPTER, "fetch_historical", None)
+    if fetch is None:
+        return {
+            "status": "unavailable",
+            "source": _OCEAN_ADAPTER.source_name,
+            "operation": "get_historical_data",
+            "observation_time": None,
+            "valid_time": None,
+            "error": "The active ocean adapter has no historical archive",
+            "data": {},
+        }
+    try:
+        return fetch(
+            location=location,
+            variable=parameters.get("variable") or "SST",
+            requested_time=parameters.get("requested_time"),
+            zone_id=parameters.get("zone_id"),
+        )
+    except Exception as e:
+        return {
+            "status": "error",
+            "source": _OCEAN_ADAPTER.source_name,
+            "operation": "get_historical_data",
+            "error": f"Failed to retrieve historical data: {str(e)}",
+            "data": {},
+        }

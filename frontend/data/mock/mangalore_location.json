@@ -1,0 +1,13 @@
+{
+  "name": "Mangalore Old Port (Bunder)",
+  "state": "Karnataka",
+  "country": "India",
+  "latitude": 12.8550,
+  "longitude": 74.8360,
+  "is_default": true,
+  "landing_centers": [
+    "Mangalore Old Port (Bunder)",
+    "New Mangalore Port Trust (NMPT)",
+    "Ullal Fish Landing Center"
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [74.3500, 12.5500]
+      },
+      "properties": {
+        "hazard_id": "CYCLONE_WARN_01",
+        "name": "Deep Depression ARB-02 (Developing System)",
+        "intensity": "Deep Depression / Severe Weather Front",
+        "wind_gusts_knots": 45.0,
+        "central_pressure_hpa": 996,
+        "movement_speed_kmh": 14,
+        "movement_direction": "NNW",
+        "advisory": "Fishermen advisory in effect: Total suspension of fishing operations in outer sea sectors",
+        "authority": "IMD Cyclone Warning Division (Mock)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [74.1000, 12.2000],
+          [74.2200, 12.3800],
+          [74.3500, 12.5500],
+          [74.4800, 12.8000],
+          [74.6000, 13.1500]
+        ]
+      },
+      "properties": {
+        "id": "CYCLONE_TRACK",
+        "name": "Forecasted Trajectory (48-hr Cone)",
+        "type": "forecast_track",
+        "color": "#f97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [74.0500, 12.2500],
+            [74.6500, 12.2500],
+            [74.7500, 12.8500],
+            [74.1500, 12.8500],
+            [74.0500, 12.2500]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "GALE_RADIUS_BUFFER",
+        "name": "High Gale Wind & Heavy Swell Buffer Zone",
+        "type": "hazard_buffer",
+        "gale_radius_nm": 35
+      }
+    }
+  ]
+}

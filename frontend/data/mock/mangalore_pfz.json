@@ -1,0 +1,96 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [74.6000, 12.8000]
+      },
+      "properties": {
+        "id": "PFZ_KA_001",
+        "name": "Netravati Offshore Thermal Front",
+        "confidence": 0.88,
+        "source": "INCOIS Multi-Mission Composite (Mock)",
+        "valid_time": "2026-09-11T06:00:00Z",
+        "depth_m": 42,
+        "sst_delta": "0.6°C front",
+        "target_species": ["Mackerel", "Sardines", "Pelagic Tuna"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [74.6900, 12.9100]
+      },
+      "properties": {
+        "id": "PFZ_KA_002",
+        "name": "Gurupura Front Edge",
+        "confidence": 0.92,
+        "source": "INCOIS Sea Surface Convergence (Mock)",
+        "valid_time": "2026-09-11T06:00:00Z",
+        "depth_m": 35,
+        "sst_delta": "1.1°C front",
+        "target_species": ["Seer Fish", "King Mackerel"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [74.5200, 12.7200]
+      },
+      "properties": {
+        "id": "PFZ_KA_003",
+        "name": "Ullal Southwest Shelf Front",
+        "confidence": 0.81,
+        "source": "INCOIS Thermal Front Analysis (Mock)",
+        "valid_time": "2026-09-11T06:00:00Z",
+        "depth_m": 50,
+        "sst_delta": "0.5°C front",
+        "target_species": ["Yellowfin Tuna", "Ribbonfish"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [74.6400, 13.1200]
+      },
+      "properties": {
+        "id": "PFZ_KA_004",
+        "name": "Kaup Deep Contour PFZ",
+        "confidence": 0.85,
+        "source": "INCOIS Chlorophyll-SST Overlay (Mock)",
+        "valid_time": "2026-09-11T06:00:00Z",
+        "depth_m": 46,
+        "sst_delta": "0.7°C front",
+        "target_species": ["Trevally", "Mackerel"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [74.5500, 12.6500],
+          [74.5800, 12.7500],
+          [74.6000, 12.8000],
+          [74.6300, 12.9200],
+          [74.6500, 13.0500]
+        ]
+      },
+      "properties": {
+        "id": "PFZ_FRONT_LINE_01",
+        "name": "South Karnataka Coastal Upwelling Front",
+        "confidence": 0.89,
+        "source": "INCOIS Ocean Front Line (Mock)",
+        "valid_time": "2026-09-11T06:00:00Z",
+        "depth_m": 40,
+        "sst_delta": "Thermal convergence line along 40m depth",
+        "target_species": ["Mixed Pelagics"]
+      }
+    }
+  ]
+}

@@ -1,0 +1,100 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [74.6900, 12.9100]
+      },
+      "properties": {
+        "id": "WIND_ZONE_A",
+        "name": "Gurupura Offshore - Rough Sea Sector",
+        "wind_speed_knots": 25.0,
+        "wind_direction_deg": 290,
+        "wind_direction_cardinal": "WNW",
+        "wave_height_m": 2.7,
+        "swell_period_sec": 12.4,
+        "sea_state": "Rough Sea State",
+        "severity": "danger_red",
+        "advisory": "Small craft and motorized canoe warning; hazardous swell chop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [74.6000, 12.8000]
+      },
+      "properties": {
+        "id": "WIND_ZONE_B",
+        "name": "Netravati Offshore - Calm Sea Sector",
+        "wind_speed_knots": 11.0,
+        "wind_direction_deg": 245,
+        "wind_direction_cardinal": "WSW",
+        "wave_height_m": 1.1,
+        "swell_period_sec": 8.2,
+        "sea_state": "Slight / Smooth",
+        "severity": "safe_green",
+        "advisory": "Optimal hydrodynamic conditions; safe for coastal and small crafts"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [74.7400, 13.0200]
+      },
+      "properties": {
+        "id": "WIND_ZONE_C",
+        "name": "Mulki Shoal - Sheltered Waters",
+        "wind_speed_knots": 8.5,
+        "wind_direction_deg": 315,
+        "wind_direction_cardinal": "NW",
+        "wave_height_m": 0.8,
+        "swell_period_sec": 7.0,
+        "sea_state": "Calm",
+        "severity": "safe_green",
+        "advisory": "Sheltered coastal waters; note marine sanctuary boundaries"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [74.7800, 12.8500]
+      },
+      "properties": {
+        "id": "WIND_PORT_APPROACH",
+        "name": "Mangalore Harbour Approach",
+        "wind_speed_knots": 10.0,
+        "wind_direction_deg": 250,
+        "wind_direction_cardinal": "WSW",
+        "wave_height_m": 1.0,
+        "swell_period_sec": 7.8,
+        "sea_state": "Smooth",
+        "severity": "safe_green",
+        "advisory": "Port channel navigation clear"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [74.5200, 12.7200]
+      },
+      "properties": {
+        "id": "WIND_DEEP_SHELF",
+        "name": "Southwest Outer Shelf",
+        "wind_speed_knots": 14.5,
+        "wind_direction_deg": 260,
+        "wind_direction_cardinal": "W",
+        "wave_height_m": 1.4,
+        "swell_period_sec": 9.0,
+        "sea_state": "Moderate",
+        "severity": "caution_yellow",
+        "advisory": "Normal oceanic swell; mechanized trawlers permitted"
+      }
+    }
+  ]
+}

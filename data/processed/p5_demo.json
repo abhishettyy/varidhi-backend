@@ -12,7 +12,7 @@
     "quality": "valid",
     "provenance": {
       "provider": "ECMWF",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
       "raw_variable": "2t",
       "original_unit": "K",
       "details": null
@@ -31,7 +31,7 @@
     "quality": "valid",
     "provenance": {
       "provider": "ECMWF",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
       "raw_variable": "2d",
       "original_unit": "K",
       "details": null
@@ -50,7 +50,7 @@
     "quality": "valid",
     "provenance": {
       "provider": "ECMWF",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
       "raw_variable": "sst",
       "original_unit": "K",
       "details": null
@@ -69,7 +69,7 @@
     "quality": "valid",
     "provenance": {
       "provider": "ECMWF",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
       "raw_variable": "tp",
       "original_unit": "m",
       "details": {
@@ -92,7 +92,7 @@
     "quality": "derived",
     "provenance": {
       "provider": "ECMWF",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
       "raw_variable": "10u,10v",
       "original_unit": "m/s",
       "details": {
@@ -113,7 +113,7 @@
     "quality": "valid",
     "provenance": {
       "provider": "ECMWF",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
       "raw_variable": "10u",
       "original_unit": "m/s",
       "details": null
@@ -132,7 +132,7 @@
     "quality": "valid",
     "provenance": {
       "provider": "ECMWF",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
       "raw_variable": "10v",
       "original_unit": "m/s",
       "details": null
@@ -151,7 +151,7 @@
     "quality": "valid",
     "provenance": {
       "provider": "Copernicus Marine Service / METEO-FRANCE",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\waves\\waves_mangalore_20230101.nc",
+      "source_file": "E:\\SIH26\\data\\raw\\waves\\waves_mangalore_20230101.nc",
       "raw_variable": "VMDR",
       "original_unit": "degree",
       "details": null
@@ -170,7 +170,7 @@
     "quality": "valid",
     "provenance": {
       "provider": "Copernicus Marine Service / METEO-FRANCE",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\waves\\waves_mangalore_20230101.nc",
+      "source_file": "E:\\SIH26\\data\\raw\\waves\\waves_mangalore_20230101.nc",
       "raw_variable": "VTPK",
       "original_unit": "s",
       "details": null
@@ -189,7 +189,7 @@
     "quality": "valid",
     "provenance": {
       "provider": "Copernicus Marine Service / METEO-FRANCE",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\waves\\waves_mangalore_20230101.nc",
+      "source_file": "E:\\SIH26\\data\\raw\\waves\\waves_mangalore_20230101.nc",
       "raw_variable": "VHM0",
       "original_unit": "m",
       "details": null
@@ -208,7 +208,7 @@
     "quality": "valid",
     "provenance": {
       "provider": "ECMWF",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
       "raw_variable": "2t",
       "original_unit": "K",
       "details": null
@@ -227,7 +227,7 @@
     "quality": "valid",
     "provenance": {
       "provider": "ECMWF",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
       "raw_variable": "2d",
       "original_unit": "K",
       "details": null
@@ -246,7 +246,7 @@
     "quality": "valid",
     "provenance": {
       "provider": "ECMWF",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
       "raw_variable": "sst",
       "original_unit": "K",
       "details": null
@@ -265,7 +265,7 @@
     "quality": "valid",
     "provenance": {
       "provider": "ECMWF",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
       "raw_variable": "tp",
       "original_unit": "m",
       "details": {
@@ -288,7 +288,7 @@
     "quality": "derived",
     "provenance": {
       "provider": "ECMWF",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
       "raw_variable": "10u,10v",
       "original_unit": "m/s",
       "details": {
@@ -309,7 +309,7 @@
     "quality": "valid",
     "provenance": {
       "provider": "ECMWF",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
       "raw_variable": "10u",
       "original_unit": "m/s",
       "details": null
@@ -328,7 +328,7 @@
     "quality": "valid",
     "provenance": {
       "provider": "ECMWF",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
       "raw_variable": "10v",
       "original_unit": "m/s",
       "details": null
@@ -347,7 +347,7 @@
     "quality": "valid",
     "provenance": {
       "provider": "Copernicus Marine Service / METEO-FRANCE",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\waves\\waves_mangalore_20230101.nc",
+      "source_file": "E:\\SIH26\\data\\raw\\waves\\waves_mangalore_20230101.nc",
       "raw_variable": "VMDR",
       "original_unit": "degree",
       "details": null
@@ -366,7 +366,7 @@
     "quality": "valid",
     "provenance": {
       "provider": "Copernicus Marine Service / METEO-FRANCE",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\waves\\waves_mangalore_20230101.nc",
+      "source_file": "E:\\SIH26\\data\\raw\\waves\\waves_mangalore_20230101.nc",
       "raw_variable": "VTPK",
       "original_unit": "s",
       "details": null
@@ -385,7 +385,7 @@
     "quality": "valid",
     "provenance": {
       "provider": "Copernicus Marine Service / METEO-FRANCE",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\waves\\waves_mangalore_20230101.nc",
+      "source_file": "E:\\SIH26\\data\\raw\\waves\\waves_mangalore_20230101.nc",
       "raw_variable": "VHM0",
       "original_unit": "m",
       "details": null
@@ -404,7 +404,7 @@
     "quality": "valid",
     "provenance": {
       "provider": "ECMWF",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
       "raw_variable": "2t",
       "original_unit": "K",
       "details": null
@@ -423,7 +423,7 @@
     "quality": "valid",
     "provenance": {
       "provider": "ECMWF",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
       "raw_variable": "2d",
       "original_unit": "K",
       "details": null
@@ -442,7 +442,7 @@
     "quality": "valid",
     "provenance": {
       "provider": "ECMWF",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
       "raw_variable": "sst",
       "original_unit": "K",
       "details": null
@@ -461,7 +461,7 @@
     "quality": "valid",
     "provenance": {
       "provider": "ECMWF",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
       "raw_variable": "tp",
       "original_unit": "m",
       "details": {
@@ -484,7 +484,7 @@
     "quality": "derived",
     "provenance": {
       "provider": "ECMWF",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
       "raw_variable": "10u,10v",
       "original_unit": "m/s",
       "details": {
@@ -505,7 +505,7 @@
     "quality": "valid",
     "provenance": {
       "provider": "ECMWF",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
       "raw_variable": "10u",
       "original_unit": "m/s",
       "details": null
@@ -524,7 +524,7 @@
     "quality": "valid",
     "provenance": {
       "provider": "ECMWF",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\grib\\data.grib",
+      "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
       "raw_variable": "10v",
       "original_unit": "m/s",
       "details": null
@@ -543,7 +543,7 @@
     "quality": "valid",
     "provenance": {
       "provider": "Copernicus Marine Service / METEO-FRANCE",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\waves\\waves_mangalore_20230101.nc",
+      "source_file": "E:\\SIH26\\data\\raw\\waves\\waves_mangalore_20230101.nc",
       "raw_variable": "VMDR",
       "original_unit": "degree",
       "details": null
@@ -562,7 +562,7 @@
     "quality": "valid",
     "provenance": {
       "provider": "Copernicus Marine Service / METEO-FRANCE",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\waves\\waves_mangalore_20230101.nc",
+      "source_file": "E:\\SIH26\\data\\raw\\waves\\waves_mangalore_20230101.nc",
       "raw_variable": "VTPK",
       "original_unit": "s",
       "details": null
@@ -581,7 +581,7 @@
     "quality": "valid",
     "provenance": {
       "provider": "Copernicus Marine Service / METEO-FRANCE",
-      "source_file": "C:\\Users\\anuav\\Varidhi\\data\\raw\\waves\\waves_mangalore_20230101.nc",
+      "source_file": "E:\\SIH26\\data\\raw\\waves\\waves_mangalore_20230101.nc",
       "raw_variable": "VHM0",
       "original_unit": "m",
       "details": null

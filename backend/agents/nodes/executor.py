@@ -1,9 +1,9 @@
-"""Generic dependency-aware executor node backed by mock tool registry and P4/P6 interface bridges."""
+"""Generic dependency-aware executor node backed by the active P5/P4 tool registry."""
 
 import asyncio
 from typing import Any, Dict, List, Optional, Set
 
-from backend.agents.mocks.tool_registry import get_tool_registry
+from backend.agents.tools.registry_bridge import use_p5_tools
 from backend.agents.schemas.plan import (
     InputPolicy,
     PlanStep,
@@ -71,7 +71,7 @@ async def execute_single_step(
     if failed_deps and policy == InputPolicy.REQUIRE_ALL.value:
         return {
             "status": "blocked",
-            "source": "mock",
+            "source": "p5",
             "operation": op,
             "error": f"Required dependency failed/missing: {failed_deps}",
             "data": {},
@@ -147,7 +147,9 @@ async def executor_node(state: MarineState) -> Dict[str, Any]:
             "latency_telemetry": latency_telemetry,
         }
 
-    registry = get_tool_registry()
+    # The production graph must execute through the P5-backed adapters. Tests
+    # can still inject another registry by calling the registry bridge helpers.
+    registry = use_p5_tools()
 
     # Intermediate output cache keyed by step ID
     step_outputs: Dict[str, Any] = {}
@@ -171,7 +173,7 @@ async def executor_node(state: MarineState) -> Dict[str, Any]:
                 op = s.operation or s.operation_name or "unknown"
                 blocked_res = {
                     "status": "blocked",
-                    "source": "mock",
+                    "source": "p5",
                     "operation": op,
                     "error": f"Step stalled due to unsatisfied upstream dependencies: {s.depends_on}",
                     "data": {},

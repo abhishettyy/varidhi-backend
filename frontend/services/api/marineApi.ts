@@ -5,7 +5,15 @@
 
 import { FishingZone, LegalStatus, RecommendationStatus } from '@/types/marine';
 import { apiClient } from './client';
-import { getMockZones } from './mockData';
+
+export const DEFAULT_MARINE_LOCATION = {
+  name: 'Mangalore Coast',
+  state: 'Karnataka',
+  country: 'India',
+  latitude: 12.8681,
+  longitude: 74.8427,
+  is_default: true,
+};
 
 export interface P5ZoneRecord {
   zone_id: string;
@@ -41,7 +49,7 @@ export interface CoastalTelemetry {
   current_heading: string;
   sst_celsius: string;
   sea_state: string;
-  source: 'REAL_BACKEND' | 'MOCK_FALLBACK';
+  source: 'REAL_BACKEND';
 }
 
 export interface BackendHealthResponse {
@@ -95,9 +103,9 @@ export async function fetchFishingZones(lat: number = 12.8681, lon: number = 74.
         const pfz = pfzRecords.find((r) => r.zone_id === z.zone_id)?.data || {};
         const wave = waveRecords.find((r) => r.zone_id === z.zone_id)?.data || {};
         
-        const isBlocked = z.regulatory_status === 'BLOCKED' || z.zone_id === 'ZONE_C';
-        const waveHeight = (wave.wave_height_m as number) || (wave.significant_wave_height_m as number) || (z.zone_id === 'ZONE_A' ? 2.7 : 1.1);
-        const isHighWave = waveHeight > 2.0 || z.zone_id === 'ZONE_A';
+        const isBlocked = z.regulatory_status === 'BLOCKED';
+        const waveHeight = (wave.wave_height_m as number) ?? (wave.significant_wave_height_m as number) ?? 0;
+        const isHighWave = waveHeight > 2.0;
 
         let status: RecommendationStatus = 'alternative';
         if (isBlocked) {
@@ -111,35 +119,13 @@ export async function fetchFishingZones(lat: number = 12.8681, lon: number = 74.
         const legal_status: LegalStatus = isBlocked ? 'restricted' : 'allowed';
         
         // Canonical Opportunity, Risk & Ranking scores
-        let oppScore = 66.9;
-        let riskScore = 34.9;
-        let rankScore: number | undefined = 67.31;
-        let distKm = 15.2; // 8.2 NM
-        let bearingStr = 'SSW';
-        let speciesList = ['Mackerel', 'Sardines'];
-        let depthM = 35;
-
-        if (z.zone_id === 'ZONE_A') {
-          oppScore = 76.6;
-          riskScore = 75.2;
-          rankScore = undefined;
-          distKm = 26.9; // 14.5 NM
-          bearingStr = 'WNW';
-          speciesList = ['Pelagic Tuna', 'Kingfish'];
-          depthM = 45;
-        } else if (z.zone_id === 'ZONE_C') {
-          oppScore = 84.5;
-          riskScore = 30.8;
-          rankScore = undefined;
-          distKm = 33.3; // 18.0 NM
-          bearingStr = 'SSE';
-          speciesList = ['Yellowfin Tuna', 'Barracuda'];
-          depthM = 28;
-        } else if (pfz.pfz_confidence) {
-          oppScore = Math.round((pfz.pfz_confidence as number) * 100);
-          if (pfz.distance_nm) distKm = Math.round((pfz.distance_nm as number) * 1.852);
-          if (pfz.bearing_deg) bearingStr = `${Math.round(pfz.bearing_deg as number)}°`;
-        }
+        const oppScore = typeof pfz.pfz_confidence === 'number' ? Math.round(pfz.pfz_confidence * 100) : 0;
+        const riskScore = 0;
+        const rankScore: number | undefined = undefined;
+        const distKm = typeof pfz.distance_nm === 'number' ? Math.round(pfz.distance_nm * 1.852) : 0;
+        const bearingStr = typeof pfz.bearing_deg === 'number' ? `${Math.round(pfz.bearing_deg)}°` : 'UNKNOWN';
+        const speciesList = Array.isArray(pfz.species) ? (pfz.species as string[]) : [];
+        const depthM = typeof pfz.depth_m === 'number' ? pfz.depth_m : 0;
 
         return {
           id: z.zone_id,
@@ -154,7 +140,7 @@ export async function fetchFishingZones(lat: number = 12.8681, lon: number = 74.
           bearing: bearingStr,
           target_depth_m: depthM,
           legal_status,
-          species: (pfz.species as string[]) || speciesList,
+          species: speciesList,
           coordinates: [z.longitude, z.latitude] as [number, number],
           reasons: isBlocked
             ? ['Inside Mulki Marine Sanctuary boundary (Legal override: BLOCKED)']
@@ -177,10 +163,10 @@ export async function fetchFishingZones(lat: number = 12.8681, lon: number = 74.
       });
     }
   } catch (error) {
-    console.warn(`[Varidhi API: MOCK FALLBACK] /p5/v1/zones failed (${error instanceof Error ? error.message : String(error)}). Using local zones.`);
+    console.error(`[Varidhi API] /p5/v1/zones failed: ${error instanceof Error ? error.message : String(error)}`);
+    throw error;
   }
-
-  return getMockZones();
+  return [];
 }
 
 /**
@@ -198,16 +184,16 @@ export async function fetchLiveTelemetry(lat: number = 12.8681, lon: number = 74
     const firstWave = waveResp.records?.[0]?.data || {};
     const firstSst = sstResp.records?.[0]?.data || {};
 
-    const windKts = (firstWind.speed_knots as number) || 11.0;
+    const windKts = (firstWind.wind_speed_knots as number) ?? (firstWind.speed_knots as number) ?? 0;
     const windKmh = Math.round(windKts * 1.852);
-    const waveM = (firstWave.significant_wave_height_m as number) || (firstWave.wave_height_m as number) || 1.1;
-    const sstC = (firstSst.sst_celsius as number) || 28.7;
+    const waveM = (firstWave.significant_wave_height_m as number) ?? (firstWave.wave_height_m as number) ?? 0;
+    const sstC = (firstSst.sst_celsius as number) ?? 0;
 
     console.info('[Varidhi API: REAL BACKEND] Live telemetry fetched from P5 service');
 
     return {
       wind_speed_kmh: `${windKmh} km/h (${windKts.toFixed(0)} kts)`,
-      wind_direction: `${(firstWind.direction_deg as number) || 245}° WSW`,
+      wind_direction: typeof firstWind.direction_deg === 'number' ? `${firstWind.direction_deg}°` : 'UNKNOWN',
       wave_height_m: `${waveM.toFixed(1)} m`,
       wave_subtext: 'Hs Significant (P5)',
       swell_direction: 'SW 222°',
@@ -219,19 +205,7 @@ export async function fetchLiveTelemetry(lat: number = 12.8681, lon: number = 74
       source: 'REAL_BACKEND',
     };
   } catch (err) {
-    console.warn('[Varidhi API: MOCK FALLBACK] P5 telemetry offline. Using fallback telemetry.');
-    return {
-      wind_speed_kmh: '20 km/h (11 kts)',
-      wind_direction: 'WSW 245°',
-      wave_height_m: '1.1 m',
-      wave_subtext: 'Hs Significant',
-      swell_direction: 'SW 222°',
-      swell_period: 'Period 8.2s',
-      current_mps: '0.80 m/s',
-      current_heading: 'Heading 185°',
-      sst_celsius: '28.7°C',
-      sea_state: 'SLIGHT',
-      source: 'MOCK_FALLBACK',
-    };
+    console.error(`[Varidhi API] P5 telemetry unavailable: ${err instanceof Error ? err.message : String(err)}`);
+    throw err;
   }
 }

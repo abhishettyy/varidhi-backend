@@ -1,0 +1,833 @@
+[
+  {
+    "zone_id": "ZONE_001",
+    "latitude": 11.5,
+    "longitude": 73.0,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "data": {
+      "air_temperature_2m": 27.750634765625023,
+      "dewpoint_temperature_2m": 22.877587890625023,
+      "sea_surface_temperature": 28.763818359375023,
+      "total_precipitation": 0.0,
+      "wind_speed": 5.910524183987763,
+      "wind_u": -0.0382537841796875,
+      "wind_v": -5.910400390625,
+      "mean_wave_direction": 160.72000122070312,
+      "peak_wave_period": 12.609999656677246,
+      "significant_wave_height": 0.9799999594688416,
+      "chlorophyll_a_mg_m3": 1.321,
+      "swell_height_m": 0.95,
+      "swell_period_s": 7.9,
+      "swell_direction_deg": 210.6,
+      "water_level_m": 0.67,
+      "current_speed_knots": 0.53,
+      "current_direction_deg": 6.7
+    },
+    "units": {
+      "air_temperature_2m": "degC",
+      "dewpoint_temperature_2m": "degC",
+      "sea_surface_temperature": "degC",
+      "total_precipitation": "m",
+      "wind_speed": "m/s",
+      "wind_u": "m/s",
+      "wind_v": "m/s",
+      "mean_wave_direction": "degree",
+      "peak_wave_period": "s",
+      "significant_wave_height": "m",
+      "chlorophyll_a_mg_m3": "mg/m3",
+      "swell_height_m": "m",
+      "swell_period_s": "s",
+      "swell_direction_deg": "degrees_true",
+      "water_level_m": "m above chart datum",
+      "current_speed_knots": "kn",
+      "current_direction_deg": "degrees_true"
+    },
+    "field_provenance": {
+      "air_temperature_2m": {
+        "source": "ECMWF GRIB1",
+        "quality": "valid",
+        "provenance": {
+          "provider": "ECMWF",
+          "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
+          "raw_variable": "2t",
+          "original_unit": "K",
+          "details": null
+        }
+      },
+      "dewpoint_temperature_2m": {
+        "source": "ECMWF GRIB1",
+        "quality": "valid",
+        "provenance": {
+          "provider": "ECMWF",
+          "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
+          "raw_variable": "2d",
+          "original_unit": "K",
+          "details": null
+        }
+      },
+      "sea_surface_temperature": {
+        "source": "ECMWF GRIB1",
+        "quality": "valid",
+        "provenance": {
+          "provider": "ECMWF",
+          "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
+          "raw_variable": "sst",
+          "original_unit": "K",
+          "details": null
+        }
+      },
+      "total_precipitation": {
+        "source": "ECMWF GRIB1",
+        "quality": "valid",
+        "provenance": {
+          "provider": "ECMWF",
+          "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
+          "raw_variable": "tp",
+          "original_unit": "m",
+          "details": {
+            "accumulated": true,
+            "accumulation_start": "2023-01-01T11:00:00+00:00",
+            "accumulation_end": "2023-01-01T12:00:00+00:00"
+          }
+        }
+      },
+      "wind_speed": {
+        "source": "derived from ECMWF GRIB1",
+        "quality": "derived",
+        "provenance": {
+          "provider": "ECMWF",
+          "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
+          "raw_variable": "10u,10v",
+          "original_unit": "m/s",
+          "details": {
+            "formula": "sqrt(wind_u**2 + wind_v**2)"
+          }
+        }
+      },
+      "wind_u": {
+        "source": "ECMWF GRIB1",
+        "quality": "valid",
+        "provenance": {
+          "provider": "ECMWF",
+          "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
+          "raw_variable": "10u",
+          "original_unit": "m/s",
+          "details": null
+        }
+      },
+      "wind_v": {
+        "source": "ECMWF GRIB1",
+        "quality": "valid",
+        "provenance": {
+          "provider": "ECMWF",
+          "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
+          "raw_variable": "10v",
+          "original_unit": "m/s",
+          "details": null
+        }
+      },
+      "mean_wave_direction": {
+        "source": "Copernicus Marine Service",
+        "quality": "valid",
+        "provenance": {
+          "provider": "Copernicus Marine Service / METEO-FRANCE",
+          "source_file": "E:\\SIH26\\data\\raw\\waves\\waves_mangalore_20230101.nc",
+          "raw_variable": "VMDR",
+          "original_unit": "degree",
+          "details": null
+        }
+      },
+      "peak_wave_period": {
+        "source": "Copernicus Marine Service",
+        "quality": "valid",
+        "provenance": {
+          "provider": "Copernicus Marine Service / METEO-FRANCE",
+          "source_file": "E:\\SIH26\\data\\raw\\waves\\waves_mangalore_20230101.nc",
+          "raw_variable": "VTPK",
+          "original_unit": "s",
+          "details": null
+        }
+      },
+      "significant_wave_height": {
+        "source": "Copernicus Marine Service",
+        "quality": "valid",
+        "provenance": {
+          "provider": "Copernicus Marine Service / METEO-FRANCE",
+          "source_file": "E:\\SIH26\\data\\raw\\waves\\waves_mangalore_20230101.nc",
+          "raw_variable": "VHM0",
+          "original_unit": "m",
+          "details": null
+        }
+      },
+      "chlorophyll_a_mg_m3": {
+        "source": "synthetic-enrichment",
+        "quality": "synthetic",
+        "provenance": {
+          "provider": "Varidhi synthetic enrichment",
+          "source_file": "generated",
+          "raw_variable": "chlorophyll_a_mg_m3",
+          "original_unit": "mg/m3",
+          "details": {
+            "synthetic": true,
+            "seed": 20260917,
+            "method": "deterministic bounded enrichment",
+            "derived_from": "real observations in the same time/location group"
+          }
+        }
+      },
+      "swell_height_m": {
+        "source": "synthetic-enrichment",
+        "quality": "synthetic",
+        "provenance": {
+          "provider": "Varidhi synthetic enrichment",
+          "source_file": "generated",
+          "raw_variable": "swell_height_m",
+          "original_unit": "m",
+          "details": {
+            "synthetic": true,
+            "seed": 20260917,
+            "method": "deterministic bounded enrichment",
+            "derived_from": "real observations in the same time/location group"
+          }
+        }
+      },
+      "swell_period_s": {
+        "source": "synthetic-enrichment",
+        "quality": "synthetic",
+        "provenance": {
+          "provider": "Varidhi synthetic enrichment",
+          "source_file": "generated",
+          "raw_variable": "swell_period_s",
+          "original_unit": "s",
+          "details": {
+            "synthetic": true,
+            "seed": 20260917,
+            "method": "deterministic bounded enrichment",
+            "derived_from": "real observations in the same time/location group"
+          }
+        }
+      },
+      "swell_direction_deg": {
+        "source": "synthetic-enrichment",
+        "quality": "synthetic",
+        "provenance": {
+          "provider": "Varidhi synthetic enrichment",
+          "source_file": "generated",
+          "raw_variable": "swell_direction_deg",
+          "original_unit": "degrees_true",
+          "details": {
+            "synthetic": true,
+            "seed": 20260917,
+            "method": "deterministic bounded enrichment",
+            "derived_from": "real observations in the same time/location group"
+          }
+        }
+      },
+      "water_level_m": {
+        "source": "synthetic-enrichment",
+        "quality": "synthetic",
+        "provenance": {
+          "provider": "Varidhi synthetic enrichment",
+          "source_file": "generated",
+          "raw_variable": "water_level_m",
+          "original_unit": "m above chart datum",
+          "details": {
+            "synthetic": true,
+            "seed": 20260917,
+            "method": "deterministic bounded enrichment",
+            "derived_from": "real observations in the same time/location group"
+          }
+        }
+      },
+      "current_speed_knots": {
+        "source": "synthetic-enrichment",
+        "quality": "synthetic",
+        "provenance": {
+          "provider": "Varidhi synthetic enrichment",
+          "source_file": "generated",
+          "raw_variable": "current_speed_knots",
+          "original_unit": "kn",
+          "details": {
+            "synthetic": true,
+            "seed": 20260917,
+            "method": "deterministic bounded enrichment",
+            "derived_from": "real observations in the same time/location group"
+          }
+        }
+      },
+      "current_direction_deg": {
+        "source": "synthetic-enrichment",
+        "quality": "synthetic",
+        "provenance": {
+          "provider": "Varidhi synthetic enrichment",
+          "source_file": "generated",
+          "raw_variable": "current_direction_deg",
+          "original_unit": "degrees_true",
+          "details": {
+            "synthetic": true,
+            "seed": 20260917,
+            "method": "deterministic bounded enrichment",
+            "derived_from": "real observations in the same time/location group"
+          }
+        }
+      }
+    },
+    "real_field_count": 10,
+    "synthetic_field_count": 7
+  },
+  {
+    "zone_id": "ZONE_002",
+    "latitude": 11.5,
+    "longitude": 73.25,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "data": {
+      "air_temperature_2m": 27.805322265625023,
+      "dewpoint_temperature_2m": 22.774072265625023,
+      "sea_surface_temperature": 28.792138671875023,
+      "total_precipitation": 0.0,
+      "wind_speed": 5.563213573037505,
+      "wind_u": 0.2439727783203125,
+      "wind_v": -5.557861328125,
+      "mean_wave_direction": 174.97000122070312,
+      "peak_wave_period": 12.559999465942383,
+      "significant_wave_height": 0.949999988079071,
+      "chlorophyll_a_mg_m3": 1.353,
+      "swell_height_m": 0.85,
+      "swell_period_s": 8.6,
+      "swell_direction_deg": 208.4,
+      "water_level_m": 0.58,
+      "current_speed_knots": 0.48,
+      "current_direction_deg": 343.9
+    },
+    "units": {
+      "air_temperature_2m": "degC",
+      "dewpoint_temperature_2m": "degC",
+      "sea_surface_temperature": "degC",
+      "total_precipitation": "m",
+      "wind_speed": "m/s",
+      "wind_u": "m/s",
+      "wind_v": "m/s",
+      "mean_wave_direction": "degree",
+      "peak_wave_period": "s",
+      "significant_wave_height": "m",
+      "chlorophyll_a_mg_m3": "mg/m3",
+      "swell_height_m": "m",
+      "swell_period_s": "s",
+      "swell_direction_deg": "degrees_true",
+      "water_level_m": "m above chart datum",
+      "current_speed_knots": "kn",
+      "current_direction_deg": "degrees_true"
+    },
+    "field_provenance": {
+      "air_temperature_2m": {
+        "source": "ECMWF GRIB1",
+        "quality": "valid",
+        "provenance": {
+          "provider": "ECMWF",
+          "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
+          "raw_variable": "2t",
+          "original_unit": "K",
+          "details": null
+        }
+      },
+      "dewpoint_temperature_2m": {
+        "source": "ECMWF GRIB1",
+        "quality": "valid",
+        "provenance": {
+          "provider": "ECMWF",
+          "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
+          "raw_variable": "2d",
+          "original_unit": "K",
+          "details": null
+        }
+      },
+      "sea_surface_temperature": {
+        "source": "ECMWF GRIB1",
+        "quality": "valid",
+        "provenance": {
+          "provider": "ECMWF",
+          "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
+          "raw_variable": "sst",
+          "original_unit": "K",
+          "details": null
+        }
+      },
+      "total_precipitation": {
+        "source": "ECMWF GRIB1",
+        "quality": "valid",
+        "provenance": {
+          "provider": "ECMWF",
+          "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
+          "raw_variable": "tp",
+          "original_unit": "m",
+          "details": {
+            "accumulated": true,
+            "accumulation_start": "2023-01-01T11:00:00+00:00",
+            "accumulation_end": "2023-01-01T12:00:00+00:00"
+          }
+        }
+      },
+      "wind_speed": {
+        "source": "derived from ECMWF GRIB1",
+        "quality": "derived",
+        "provenance": {
+          "provider": "ECMWF",
+          "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
+          "raw_variable": "10u,10v",
+          "original_unit": "m/s",
+          "details": {
+            "formula": "sqrt(wind_u**2 + wind_v**2)"
+          }
+        }
+      },
+      "wind_u": {
+        "source": "ECMWF GRIB1",
+        "quality": "valid",
+        "provenance": {
+          "provider": "ECMWF",
+          "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
+          "raw_variable": "10u",
+          "original_unit": "m/s",
+          "details": null
+        }
+      },
+      "wind_v": {
+        "source": "ECMWF GRIB1",
+        "quality": "valid",
+        "provenance": {
+          "provider": "ECMWF",
+          "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
+          "raw_variable": "10v",
+          "original_unit": "m/s",
+          "details": null
+        }
+      },
+      "mean_wave_direction": {
+        "source": "Copernicus Marine Service",
+        "quality": "valid",
+        "provenance": {
+          "provider": "Copernicus Marine Service / METEO-FRANCE",
+          "source_file": "E:\\SIH26\\data\\raw\\waves\\waves_mangalore_20230101.nc",
+          "raw_variable": "VMDR",
+          "original_unit": "degree",
+          "details": null
+        }
+      },
+      "peak_wave_period": {
+        "source": "Copernicus Marine Service",
+        "quality": "valid",
+        "provenance": {
+          "provider": "Copernicus Marine Service / METEO-FRANCE",
+          "source_file": "E:\\SIH26\\data\\raw\\waves\\waves_mangalore_20230101.nc",
+          "raw_variable": "VTPK",
+          "original_unit": "s",
+          "details": null
+        }
+      },
+      "significant_wave_height": {
+        "source": "Copernicus Marine Service",
+        "quality": "valid",
+        "provenance": {
+          "provider": "Copernicus Marine Service / METEO-FRANCE",
+          "source_file": "E:\\SIH26\\data\\raw\\waves\\waves_mangalore_20230101.nc",
+          "raw_variable": "VHM0",
+          "original_unit": "m",
+          "details": null
+        }
+      },
+      "chlorophyll_a_mg_m3": {
+        "source": "synthetic-enrichment",
+        "quality": "synthetic",
+        "provenance": {
+          "provider": "Varidhi synthetic enrichment",
+          "source_file": "generated",
+          "raw_variable": "chlorophyll_a_mg_m3",
+          "original_unit": "mg/m3",
+          "details": {
+            "synthetic": true,
+            "seed": 20260917,
+            "method": "deterministic bounded enrichment",
+            "derived_from": "real observations in the same time/location group"
+          }
+        }
+      },
+      "swell_height_m": {
+        "source": "synthetic-enrichment",
+        "quality": "synthetic",
+        "provenance": {
+          "provider": "Varidhi synthetic enrichment",
+          "source_file": "generated",
+          "raw_variable": "swell_height_m",
+          "original_unit": "m",
+          "details": {
+            "synthetic": true,
+            "seed": 20260917,
+            "method": "deterministic bounded enrichment",
+            "derived_from": "real observations in the same time/location group"
+          }
+        }
+      },
+      "swell_period_s": {
+        "source": "synthetic-enrichment",
+        "quality": "synthetic",
+        "provenance": {
+          "provider": "Varidhi synthetic enrichment",
+          "source_file": "generated",
+          "raw_variable": "swell_period_s",
+          "original_unit": "s",
+          "details": {
+            "synthetic": true,
+            "seed": 20260917,
+            "method": "deterministic bounded enrichment",
+            "derived_from": "real observations in the same time/location group"
+          }
+        }
+      },
+      "swell_direction_deg": {
+        "source": "synthetic-enrichment",
+        "quality": "synthetic",
+        "provenance": {
+          "provider": "Varidhi synthetic enrichment",
+          "source_file": "generated",
+          "raw_variable": "swell_direction_deg",
+          "original_unit": "degrees_true",
+          "details": {
+            "synthetic": true,
+            "seed": 20260917,
+            "method": "deterministic bounded enrichment",
+            "derived_from": "real observations in the same time/location group"
+          }
+        }
+      },
+      "water_level_m": {
+        "source": "synthetic-enrichment",
+        "quality": "synthetic",
+        "provenance": {
+          "provider": "Varidhi synthetic enrichment",
+          "source_file": "generated",
+          "raw_variable": "water_level_m",
+          "original_unit": "m above chart datum",
+          "details": {
+            "synthetic": true,
+            "seed": 20260917,
+            "method": "deterministic bounded enrichment",
+            "derived_from": "real observations in the same time/location group"
+          }
+        }
+      },
+      "current_speed_knots": {
+        "source": "synthetic-enrichment",
+        "quality": "synthetic",
+        "provenance": {
+          "provider": "Varidhi synthetic enrichment",
+          "source_file": "generated",
+          "raw_variable": "current_speed_knots",
+          "original_unit": "kn",
+          "details": {
+            "synthetic": true,
+            "seed": 20260917,
+            "method": "deterministic bounded enrichment",
+            "derived_from": "real observations in the same time/location group"
+          }
+        }
+      },
+      "current_direction_deg": {
+        "source": "synthetic-enrichment",
+        "quality": "synthetic",
+        "provenance": {
+          "provider": "Varidhi synthetic enrichment",
+          "source_file": "generated",
+          "raw_variable": "current_direction_deg",
+          "original_unit": "degrees_true",
+          "details": {
+            "synthetic": true,
+            "seed": 20260917,
+            "method": "deterministic bounded enrichment",
+            "derived_from": "real observations in the same time/location group"
+          }
+        }
+      }
+    },
+    "real_field_count": 10,
+    "synthetic_field_count": 7
+  },
+  {
+    "zone_id": "ZONE_003",
+    "latitude": 11.5,
+    "longitude": 73.5,
+    "observation_time": "2023-01-01T12:00:00+00:00",
+    "valid_time": "2023-01-01T12:00:00+00:00",
+    "data": {
+      "air_temperature_2m": 27.801416015625023,
+      "dewpoint_temperature_2m": 22.740869140625023,
+      "sea_surface_temperature": 28.778466796875023,
+      "total_precipitation": 0.0,
+      "wind_speed": 5.295548959309341,
+      "wind_u": 0.5506134033203125,
+      "wind_v": -5.266845703125,
+      "mean_wave_direction": 174.89999389648438,
+      "peak_wave_period": 12.460000038146973,
+      "significant_wave_height": 0.9099999666213989,
+      "chlorophyll_a_mg_m3": 1.232,
+      "swell_height_m": 0.66,
+      "swell_period_s": 8.2,
+      "swell_direction_deg": 208.4,
+      "water_level_m": 0.48,
+      "current_speed_knots": 0.47,
+      "current_direction_deg": 9.9
+    },
+    "units": {
+      "air_temperature_2m": "degC",
+      "dewpoint_temperature_2m": "degC",
+      "sea_surface_temperature": "degC",
+      "total_precipitation": "m",
+      "wind_speed": "m/s",
+      "wind_u": "m/s",
+      "wind_v": "m/s",
+      "mean_wave_direction": "degree",
+      "peak_wave_period": "s",
+      "significant_wave_height": "m",
+      "chlorophyll_a_mg_m3": "mg/m3",
+      "swell_height_m": "m",
+      "swell_period_s": "s",
+      "swell_direction_deg": "degrees_true",
+      "water_level_m": "m above chart datum",
+      "current_speed_knots": "kn",
+      "current_direction_deg": "degrees_true"
+    },
+    "field_provenance": {
+      "air_temperature_2m": {
+        "source": "ECMWF GRIB1",
+        "quality": "valid",
+        "provenance": {
+          "provider": "ECMWF",
+          "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
+          "raw_variable": "2t",
+          "original_unit": "K",
+          "details": null
+        }
+      },
+      "dewpoint_temperature_2m": {
+        "source": "ECMWF GRIB1",
+        "quality": "valid",
+        "provenance": {
+          "provider": "ECMWF",
+          "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
+          "raw_variable": "2d",
+          "original_unit": "K",
+          "details": null
+        }
+      },
+      "sea_surface_temperature": {
+        "source": "ECMWF GRIB1",
+        "quality": "valid",
+        "provenance": {
+          "provider": "ECMWF",
+          "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
+          "raw_variable": "sst",
+          "original_unit": "K",
+          "details": null
+        }
+      },
+      "total_precipitation": {
+        "source": "ECMWF GRIB1",
+        "quality": "valid",
+        "provenance": {
+          "provider": "ECMWF",
+          "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
+          "raw_variable": "tp",
+          "original_unit": "m",
+          "details": {
+            "accumulated": true,
+            "accumulation_start": "2023-01-01T11:00:00+00:00",
+            "accumulation_end": "2023-01-01T12:00:00+00:00"
+          }
+        }
+      },
+      "wind_speed": {
+        "source": "derived from ECMWF GRIB1",
+        "quality": "derived",
+        "provenance": {
+          "provider": "ECMWF",
+          "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
+          "raw_variable": "10u,10v",
+          "original_unit": "m/s",
+          "details": {
+            "formula": "sqrt(wind_u**2 + wind_v**2)"
+          }
+        }
+      },
+      "wind_u": {
+        "source": "ECMWF GRIB1",
+        "quality": "valid",
+        "provenance": {
+          "provider": "ECMWF",
+          "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
+          "raw_variable": "10u",
+          "original_unit": "m/s",
+          "details": null
+        }
+      },
+      "wind_v": {
+        "source": "ECMWF GRIB1",
+        "quality": "valid",
+        "provenance": {
+          "provider": "ECMWF",
+          "source_file": "E:\\SIH26\\data\\raw\\grib\\data.grib",
+          "raw_variable": "10v",
+          "original_unit": "m/s",
+          "details": null
+        }
+      },
+      "mean_wave_direction": {
+        "source": "Copernicus Marine Service",
+        "quality": "valid",
+        "provenance": {
+          "provider": "Copernicus Marine Service / METEO-FRANCE",
+          "source_file": "E:\\SIH26\\data\\raw\\waves\\waves_mangalore_20230101.nc",
+          "raw_variable": "VMDR",
+          "original_unit": "degree",
+          "details": null
+        }
+      },
+      "peak_wave_period": {
+        "source": "Copernicus Marine Service",
+        "quality": "valid",
+        "provenance": {
+          "provider": "Copernicus Marine Service / METEO-FRANCE",
+          "source_file": "E:\\SIH26\\data\\raw\\waves\\waves_mangalore_20230101.nc",
+          "raw_variable": "VTPK",
+          "original_unit": "s",
+          "details": null
+        }
+      },
+      "significant_wave_height": {
+        "source": "Copernicus Marine Service",
+        "quality": "valid",
+        "provenance": {
+          "provider": "Copernicus Marine Service / METEO-FRANCE",
+          "source_file": "E:\\SIH26\\data\\raw\\waves\\waves_mangalore_20230101.nc",
+          "raw_variable": "VHM0",
+          "original_unit": "m",
+          "details": null
+        }
+      },
+      "chlorophyll_a_mg_m3": {
+        "source": "synthetic-enrichment",
+        "quality": "synthetic",
+        "provenance": {
+          "provider": "Varidhi synthetic enrichment",
+          "source_file": "generated",
+          "raw_variable": "chlorophyll_a_mg_m3",
+          "original_unit": "mg/m3",
+          "details": {
+            "synthetic": true,
+            "seed": 20260917,
+            "method": "deterministic bounded enrichment",
+            "derived_from": "real observations in the same time/location group"
+          }
+        }
+      },
+      "swell_height_m": {
+        "source": "synthetic-enrichment",
+        "quality": "synthetic",
+        "provenance": {
+          "provider": "Varidhi synthetic enrichment",
+          "source_file": "generated",
+          "raw_variable": "swell_height_m",
+          "original_unit": "m",
+          "details": {
+            "synthetic": true,
+            "seed": 20260917,
+            "method": "deterministic bounded enrichment",
+            "derived_from": "real observations in the same time/location group"
+          }
+        }
+      },
+      "swell_period_s": {
+        "source": "synthetic-enrichment",
+        "quality": "synthetic",
+        "provenance": {
+          "provider": "Varidhi synthetic enrichment",
+          "source_file": "generated",
+          "raw_variable": "swell_period_s",
+          "original_unit": "s",
+          "details": {
+            "synthetic": true,
+            "seed": 20260917,
+            "method": "deterministic bounded enrichment",
+            "derived_from": "real observations in the same time/location group"
+          }
+        }
+      },
+      "swell_direction_deg": {
+        "source": "synthetic-enrichment",
+        "quality": "synthetic",
+        "provenance": {
+          "provider": "Varidhi synthetic enrichment",
+          "source_file": "generated",
+          "raw_variable": "swell_direction_deg",
+          "original_unit": "degrees_true",
+          "details": {
+            "synthetic": true,
+            "seed": 20260917,
+            "method": "deterministic bounded enrichment",
+            "derived_from": "real observations in the same time/location group"
+          }
+        }
+      },
+      "water_level_m": {
+        "source": "synthetic-enrichment",
+        "quality": "synthetic",
+        "provenance": {
+          "provider": "Varidhi synthetic enrichment",
+          "source_file": "generated",
+          "raw_variable": "water_level_m",
+          "original_unit": "m above chart datum",
+          "details": {
+            "synthetic": true,
+            "seed": 20260917,
+            "method": "deterministic bounded enrichment",
+            "derived_from": "real observations in the same time/location group"
+          }
+        }
+      },
+      "current_speed_knots": {
+        "source": "synthetic-enrichment",
+        "quality": "synthetic",
+        "provenance": {
+          "provider": "Varidhi synthetic enrichment",
+          "source_file": "generated",
+          "raw_variable": "current_speed_knots",
+          "original_unit": "kn",
+          "details": {
+            "synthetic": true,
+            "seed": 20260917,
+            "method": "deterministic bounded enrichment",
+            "derived_from": "real observations in the same time/location group"
+          }
+        }
+      },
+      "current_direction_deg": {
+        "source": "synthetic-enrichment",
+        "quality": "synthetic",
+        "provenance": {
+          "provider": "Varidhi synthetic enrichment",
+          "source_file": "generated",
+          "raw_variable": "current_direction_deg",
+          "original_unit": "degrees_true",
+          "details": {
+            "synthetic": true,
+            "seed": 20260917,
+            "method": "deterministic bounded enrichment",
+            "derived_from": "real observations in the same time/location group"
+          }
+        }
+      }
+    },
+    "real_field_count": 10,
+    "synthetic_field_count": 7
+  }
+]

@@ -25,12 +25,12 @@ from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException, Query
 
-from backend.p5.source import RECORD_TYPES, MockP5DataSource, P5DataSource, P5Error, P5Query
+from backend.p5.source import P5DataSource, P5Error, P5Query, RECORD_TYPES, get_p5_source
 
 
 def create_app(source: Optional[P5DataSource] = None) -> FastAPI:
     # The service always serves data itself — never proxies to P5_API_URL.
-    src: P5DataSource = source or MockP5DataSource(os.environ.get("P5_DATA_DIR"))
+    src: P5DataSource = source or get_p5_source()
     app = FastAPI(title="P5 Marine Data API", version="1.0.0",
                   description="Normalized marine observations and forecasts (P5 -> P4 contract).")
 

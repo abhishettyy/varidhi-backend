@@ -1,17 +1,25 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { RecommendationCard } from '@/components/fisherman/RecommendationCard';
 import { AlternativeZoneCard } from '@/components/fisherman/AlternativeZoneCard';
 import { WhyRecommendation } from '@/components/fisherman/WhyRecommendation';
-import { getMockZones } from '@/services/api/mockData';
+import { fetchFishingZones } from '@/services/api/marineApi';
+import { FishingZone } from '@/types/marine';
 
 export default function FishermanRecommendationPage() {
-  const zones = getMockZones();
+  const [zones, setZones] = useState<FishingZone[]>([]);
+  useEffect(() => {
+    fetchFishingZones().then(setZones).catch((error) => console.error('[Varidhi API] Recommendations unavailable:', error));
+  }, []);
   const recommendedZone = zones.find((z) => z.id === 'ZONE_B') || zones[0];
   const alternativeZones = zones.filter((z) => z.id !== 'ZONE_B');
+
+  if (!recommendedZone) {
+    return <main style={{ padding: '36px 20px', fontFamily: 'var(--font-abc-diatype-mono), monospace' }}>Live recommendation data unavailable.</main>;
+  }
 
   return (
     <div

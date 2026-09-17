@@ -19,7 +19,7 @@ import { coastLon, compass, sampleField, seaState } from '@/lib/marine/field';
 import type { FieldKey, LatLon, MarkerKey } from '@/lib/marine/types';
 import { FISHERMAN_QUICK_PROMPTS } from '@/services/api/chatApi';
 import { fetchFishingZones } from '@/services/api/marineApi';
-import { getMockZones, getMockUserLocation } from '@/services/api/mockData';
+import { DEFAULT_MARINE_LOCATION } from '@/services/api/marineApi';
 import { FishingZone } from '@/types/marine';
 import { Drawer } from '@/components/common/Drawer';
 import { MessageSquare, Wind, Waves, Compass, Thermometer, Sparkles } from 'lucide-react';
@@ -79,13 +79,10 @@ function curvedVoyage(from: LatLon, to: LatLon, steps = 56): [number, number][] 
 }
 
 export const FishermanWorkspace: React.FC = () => {
-  const [zones, setZones] = useState<FishingZone[]>(() => getMockZones());
-  const userLocation = getMockUserLocation();
+  const [zones, setZones] = useState<FishingZone[]>([]);
+  const userLocation = DEFAULT_MARINE_LOCATION;
 
-  const [selectedZone, setSelectedZone] = useState<FishingZone>(() => {
-    const defaultZones = getMockZones();
-    return defaultZones.find((z) => z.id === 'ZONE_B') || defaultZones[0];
-  });
+  const [selectedZone, setSelectedZone] = useState<FishingZone | null>(null);
   const [showWhyModal, setShowWhyModal] = useState(false);
   const [showAlertsDrawer, setShowAlertsDrawer] = useState(false);
   const [activeTab, setActiveTab] = useState<'advisory' | 'chat' | 'conditions'>('advisory');
@@ -137,7 +134,7 @@ export const FishermanWorkspace: React.FC = () => {
 
   // Zone B is the recommended zone
   const recommendedZone = zones.find((z) => z.id === 'ZONE_B' || z.status === 'recommended') || zones[0];
-  const alternativeZones = zones.filter((z) => z.id !== recommendedZone.id);
+  const alternativeZones = recommendedZone ? zones.filter((z) => z.id !== recommendedZone.id) : [];
 
   const handleSelectZone = useCallback((zone: FishingZone) => {
     setSelectedZone(zone);
@@ -290,14 +287,30 @@ export const FishermanWorkspace: React.FC = () => {
           <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {activeTab === 'advisory' && (
               <>
-                <RecommendationCard
-                  zone={recommendedZone}
-                  onWhyThisZone={() => setShowWhyModal(true)}
-                  onNavigate={handleCommenceVoyage}
-                />
+                {recommendedZone ? (
+                  <RecommendationCard
+                    zone={recommendedZone}
+                    onWhyThisZone={() => setShowWhyModal(true)}
+                    onNavigate={handleCommenceVoyage}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      padding: '24px',
+                      borderRadius: '24px',
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #cecac8',
+                      color: '#767371',
+                      fontSize: '12px',
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    Loading live fishing-zone recommendations...
+                  </div>
+                )}
 
                 {/* Why Modal */}
-                {showWhyModal && (
+                {showWhyModal && recommendedZone && (
                   <div
                     style={{
                       position: 'fixed',

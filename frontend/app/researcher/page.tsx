@@ -18,15 +18,7 @@ import { TimeSlider } from '@/components/researcher/TimeSlider';
 import { OceanTimeSeries } from '@/components/researcher/OceanTimeSeries';
 import { ChatPanel } from '@/components/chat/ChatPanel';
 import { RESEARCHER_QUICK_PROMPTS } from '@/services/api/chatApi';
-import {
-  getMockZones,
-  getMockUserLocation,
-  getMockPfzGeoJSON,
-  getMockRestrictionsGeoJSON,
-  getMockWeatherGeoJSON,
-  getMockVesselsGeoJSON,
-  getMockCycloneGeoJSON,
-} from '@/services/api/mockData';
+import { DEFAULT_MARINE_LOCATION } from '@/services/api/marineApi';
 import { FishingZone, UserLocation } from '@/types/marine';
 import { LayerVisibility } from '@/types/map';
 import { GeocodingResult } from '@/services/geocoding/types';
@@ -34,14 +26,14 @@ import { fetchFishingZones } from '@/services/api/marineApi';
 import { TrendingUp } from 'lucide-react';
 
 export default function ResearcherWorkspace() {
-  const [zones, setZones] = useState<FishingZone[]>(() => getMockZones());
-  const [pfzData] = useState<GeoJSON.FeatureCollection>(getMockPfzGeoJSON());
-  const [restrictionsData] = useState<GeoJSON.FeatureCollection>(getMockRestrictionsGeoJSON());
-  const [weatherData] = useState<GeoJSON.FeatureCollection>(getMockWeatherGeoJSON());
-  const [vesselData] = useState<GeoJSON.FeatureCollection>(getMockVesselsGeoJSON());
-  const [cycloneData] = useState<GeoJSON.FeatureCollection>(getMockCycloneGeoJSON());
+  const [zones, setZones] = useState<FishingZone[]>([]);
+  const [pfzData] = useState<GeoJSON.FeatureCollection>({ type: 'FeatureCollection', features: [] });
+  const [restrictionsData] = useState<GeoJSON.FeatureCollection>({ type: 'FeatureCollection', features: [] });
+  const [weatherData] = useState<GeoJSON.FeatureCollection>({ type: 'FeatureCollection', features: [] });
+  const [vesselData] = useState<GeoJSON.FeatureCollection>({ type: 'FeatureCollection', features: [] });
+  const [cycloneData] = useState<GeoJSON.FeatureCollection>({ type: 'FeatureCollection', features: [] });
 
-  const [userLocation, setUserLocation] = useState<UserLocation>(getMockUserLocation());
+  const [userLocation, setUserLocation] = useState<UserLocation>(DEFAULT_MARINE_LOCATION);
   const [selectedZone, setSelectedZone] = useState<FishingZone | null>(null);
   const [showTimeSeries, setShowTimeSeries] = useState<boolean>(false);
 

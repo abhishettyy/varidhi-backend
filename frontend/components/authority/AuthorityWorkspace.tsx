@@ -9,23 +9,17 @@ import { ActivityPanel } from './ActivityPanel';
 import { ChatPanel } from '@/components/chat/ChatPanel';
 import { AUTHORITY_QUICK_PROMPTS } from '@/services/api/chatApi';
 import { fetchFishingZones } from '@/services/api/marineApi';
-import {
-  getMockZones,
-  getMockUserLocation,
-  getMockRestrictionsGeoJSON,
-  getMockVesselsGeoJSON,
-  getMockCycloneGeoJSON,
-  getMockWeatherGeoJSON,
-} from '@/services/api/mockData';
+import { DEFAULT_MARINE_LOCATION } from '@/services/api/marineApi';
 import { FishingZone } from '@/types/marine';
 
 export const AuthorityWorkspace: React.FC = () => {
-  const [zones, setZones] = useState<FishingZone[]>(() => getMockZones());
-  const userLocation = getMockUserLocation();
-  const restrictionsData = getMockRestrictionsGeoJSON();
-  const vesselsData = getMockVesselsGeoJSON();
-  const cycloneData = getMockCycloneGeoJSON();
-  const weatherData = getMockWeatherGeoJSON();
+  const [zones, setZones] = useState<FishingZone[]>([]);
+  const userLocation = DEFAULT_MARINE_LOCATION;
+  const emptyGeoJSON: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
+  const restrictionsData = emptyGeoJSON;
+  const vesselsData = emptyGeoJSON;
+  const cycloneData = emptyGeoJSON;
+  const weatherData = emptyGeoJSON;
 
   const [selectedZone, setSelectedZone] = useState<FishingZone | null>(null);
   const [activeTab, setActiveTab] = useState<'monitoring' | 'chat' | 'fleet'>('monitoring');

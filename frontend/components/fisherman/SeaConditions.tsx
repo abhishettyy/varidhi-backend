@@ -18,12 +18,12 @@ export const SeaConditions: React.FC = () => {
   }, []);
 
   const metrics = [
-    { label: 'WIND SPEED', value: telemetry?.wind_speed_kmh || '33 km/h', sub: telemetry?.wind_direction || 'WSW 245°', icon: Wind, color: '#2b59d1' },
-    { label: 'WAVE HEIGHT', value: telemetry?.wave_height_m || '0.8 m', sub: telemetry?.wave_subtext || 'Hs Significant', icon: Waves, color: '#2b59d1' },
-    { label: 'SWELL DIR', value: telemetry?.swell_direction || 'SW 222°', sub: telemetry?.swell_period || 'Period 8.2s', icon: Compass, color: '#2b59d1' },
-    { label: 'CURRENT', value: telemetry?.current_mps || '0.41 m/s', sub: telemetry?.current_heading || 'Heading 185°', icon: Navigation, color: '#2b59d1' },
-    { label: 'SST FRONT', value: telemetry?.sst_celsius || '29.9°C', sub: 'Thermal Delta', icon: Thermometer, color: '#ff9473' },
-    { label: 'SEA STATE', value: telemetry?.sea_state || 'SLIGHT', sub: 'WMO Code 3', icon: Activity, color: '#2b59d1' },
+    { label: 'WIND SPEED', value: telemetry?.wind_speed_kmh || 'UNAVAILABLE', sub: telemetry?.wind_direction || 'No backend data', icon: Wind, color: '#2b59d1' },
+    { label: 'WAVE HEIGHT', value: telemetry?.wave_height_m || 'UNAVAILABLE', sub: telemetry?.wave_subtext || 'No backend data', icon: Waves, color: '#2b59d1' },
+    { label: 'SWELL DIR', value: telemetry?.swell_direction || 'UNAVAILABLE', sub: telemetry?.swell_period || 'No backend data', icon: Compass, color: '#2b59d1' },
+    { label: 'CURRENT', value: telemetry?.current_mps || 'UNAVAILABLE', sub: telemetry?.current_heading || 'No backend data', icon: Navigation, color: '#2b59d1' },
+    { label: 'SST FRONT', value: telemetry?.sst_celsius || 'UNAVAILABLE', sub: 'No backend data', icon: Thermometer, color: '#ff9473' },
+    { label: 'SEA STATE', value: telemetry?.sea_state || 'UNAVAILABLE', sub: 'No backend data', icon: Activity, color: '#2b59d1' },
   ];
 
 

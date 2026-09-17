@@ -546,9 +546,15 @@ html {
 .workspace-main {
   flex: 1 1 0%;
   min-width: 0;
+  min-height: 0;
   position: relative;
   height: 100%;
   overflow: hidden;
+}
+
+.workspace-main > .absolute,
+.workspace-main .leaflet-container {
+  min-height: 0;
 }
 
 @media (max-width: 1180px) {
@@ -564,7 +570,7 @@ html {
     border-right: none !important;
     border-bottom: 1px solid #cecac8;
   }
-  .workspace-main { flex: 1 1 auto; min-height: 60vh; }
+  .workspace-main { flex: 1 1 auto; min-height: 60vh; height: 60vh; }
 }
 
 /* Chart HUD: the centre caption and the readings panel step aside on small

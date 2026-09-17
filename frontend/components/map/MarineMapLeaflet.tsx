@@ -251,8 +251,14 @@ export default function MarineMapLeaflet(props: MarineMapProps) {
       };
     }
 
-    renderer.sync();
-    renderer.start();
+    map.whenReady(() => {
+      renderer.sync();
+      renderer.start();
+    });
+    requestAnimationFrame(() => {
+      map.invalidateSize({ pan: false });
+      renderer.sync();
+    });
 
     return () => {
       ro.disconnect();

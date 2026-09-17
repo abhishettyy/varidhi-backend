@@ -106,13 +106,18 @@ export async function queryVaridhiAI(
         return normalizeAgentResponse(backendResponse, role);
       }
     } catch (aliasError) {
-      console.warn(
-        `[Varidhi API: MOCK FALLBACK] Backend query failed (${aliasError instanceof Error ? aliasError.message : String(aliasError)}). Using resilient mock advisory.`
+      throw new Error(
+        `Varidhi backend query failed: ${aliasError instanceof Error ? aliasError.message : String(aliasError)}`,
+        { cause: aliasError }
       );
     }
   }
 
-  // 3. Resilient Mock Fallback
+  // The application is backend-driven; never fabricate an advisory when the
+  // LangGraph service is unavailable.
+  throw new Error('Varidhi backend returned no advisory response.');
+
+  /*
   await new Promise((resolve) => setTimeout(resolve, 200));
 
   const normalized = query.toLowerCase().trim();
@@ -530,6 +535,7 @@ export async function queryVaridhiAI(
     status: 'success',
     execution_time_seconds: 0.2,
   };
+  */
 }
 
 export const FISHERMAN_QUICK_PROMPTS: QuickPrompt[] = [

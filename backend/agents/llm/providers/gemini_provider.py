@@ -42,16 +42,19 @@ class GeminiLLMProvider(LLMProvider):
     """
 
     def __init__(self, config: Optional[LLMConfig] = None):
-        super().__init__(config or LLMConfig(provider="gemini", model="gemini-1.5-flash"))
+        super().__init__(config or LLMConfig(provider="gemini", model="gemini-3.6-flash"))
         if not self.config.api_key:
             import os
             self.config.api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("LLM_API_KEY")
 
     def _get_api_key(self) -> str:
-        key = self.config.api_key
-        if not key or not key.strip():
+        api_key = self.config.api_key
+        if not api_key:
+            import os
+            api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("LLM_API_KEY")
+        if not api_key:
             raise LLMAPIKeyMissingError("Gemini API key is missing. Set GEMINI_API_KEY or LLM_API_KEY environment variable.")
-        return key.strip()
+        return api_key
 
     def _build_request_payload(
         self,
@@ -91,7 +94,11 @@ class GeminiLLMProvider(LLMProvider):
 
         return payload
 
-    def _execute_http_request(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def _prepare_payload(self, prompt: str, system_prompt: Optional[str] = None) -> Dict[str, Any]:
+        """Formats request payload according to Google Gemini REST specification."""
+        return self._build_request_payload(prompt=prompt, system_prompt=system_prompt)
+
+    def _execute_http_request(self, payload: Dict[str, Any], attempt_fallback: bool = True) -> Dict[str, Any]:
         """Synchronous HTTP execution with timeout and error handling."""
         api_key = self._get_api_key()
         url = self.config.api_base or GEMINI_API_ENDPOINT.format(
@@ -120,6 +127,10 @@ class GeminiLLMProvider(LLMProvider):
                 raise LLMAPIKeyMissingError(f"Gemini API authentication failed (HTTP {e.code}): {err_body}")
             elif e.code == 429:
                 raise LLMError(f"Gemini API rate limit exceeded (HTTP 429): {err_body}")
+            elif e.code == 404 and attempt_fallback and self.config.model != "gemini-3.6-flash":
+                # Automatically fallback from deprecated models (e.g. gemini-1.5-flash) to active gemini-3.6-flash
+                self.config.model = "gemini-3.6-flash"
+                return self._execute_http_request(payload, attempt_fallback=False)
             else:
                 raise LLMError(f"Gemini API HTTP {e.code} error: {err_body}")
         except urllib.error.URLError as e:

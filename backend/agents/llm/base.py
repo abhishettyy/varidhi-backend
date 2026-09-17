@@ -11,7 +11,7 @@ T = TypeVar("T", bound=BaseModel)
 class LLMConfig(BaseModel):
     """Configuration options for an LLM provider."""
     provider: str = Field(default="mock", description="Provider type: 'mock', 'gemini', 'openai'.")
-    model: str = Field(default="gemini-1.5-flash", description="Model identifier.")
+    model: str = Field(default="gemini-3.6-flash", description="Model identifier.")
     api_key: Optional[str] = Field(default=None, description="API credential key.")
     api_base: Optional[str] = Field(default=None, description="Custom API endpoint base URL.")
     temperature: float = Field(default=0.0, description="Sampling temperature (0.0 for deterministic).")

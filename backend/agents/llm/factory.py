@@ -67,7 +67,7 @@ def get_llm_config_from_env() -> LLMConfig:
 
     # Model defaults
     default_model = (
-        "gemini-1.5-flash"
+        "gemini-3.6-flash"
         if provider == "gemini"
         else ("gpt-4o-mini" if provider == "openai" else "mock-model")
     )

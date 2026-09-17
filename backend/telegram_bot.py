@@ -505,7 +505,7 @@ async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     current_port = context.user_data.get("current_port", SUPPORTED_PORTS["mangalore"])
     await update.message.reply_chat_action("typing")
-    status_msg = await update.message.reply_text("⏳ Processing advisory...")
+    status_msg = await update.message.reply_text("⏳ Processing advisory with Gemini AI...")
     try:
         backend_data = await query_varidhi_backend(
             query=update.message.text.strip(),
@@ -513,8 +513,16 @@ async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE
             lon=current_port["lon"],
             port_name=current_port["name_en"],
         )
-        report = build_natural_fisherman_report(current_port, backend_data, lang=lang)
-        await status_msg.edit_text(report, parse_mode="HTML", reply_markup=get_action_buttons(lang))
+        ai_response = backend_data.get("message") or backend_data.get("markdown_content")
+        if ai_response and len(ai_response.strip()) > 30:
+            # Direct response from Gemini Marine AI
+            display_text = ai_response.strip()
+            if len(display_text) > 4000:
+                display_text = display_text[:3990] + "\n\n..."
+            await status_msg.edit_text(display_text, reply_markup=get_action_buttons(lang))
+        else:
+            report = build_natural_fisherman_report(current_port, backend_data, lang=lang)
+            await status_msg.edit_text(report, parse_mode="HTML", reply_markup=get_action_buttons(lang))
     except Exception as e:
         logger.error("Error: %s", e)
         await status_msg.edit_text("⚠️ Server error.")

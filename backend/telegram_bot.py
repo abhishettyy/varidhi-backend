@@ -12,6 +12,11 @@ import sys
 import re
 import logging
 from pathlib import Path
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
 import httpx
 from dotenv import load_dotenv
 
@@ -24,8 +29,7 @@ from telegram import (
     Update,
     InlineKeyboardMarkup,
     InlineKeyboardButton,
-    ReplyKeyboardMarkup,
-    KeyboardButton,
+    ReplyKeyboardRemove,
 )
 from telegram.ext import (
     ApplicationBuilder,
@@ -154,17 +158,13 @@ def get_language_picker_buttons() -> InlineKeyboardMarkup:
 
 
 def get_port_picker_buttons(lang: str = "kn") -> InlineKeyboardMarkup:
-    """Port selection buttons."""
+    """Port selection buttons with clean, wide full-width layout."""
     name_key = f"name_{lang}"
     keyboard = [
-        [
-            InlineKeyboardButton(f"⚓ {SUPPORTED_PORTS['mangalore'].get(name_key, 'Mangalore')}", callback_data="port_mangalore"),
-            InlineKeyboardButton(f"⚓ {SUPPORTED_PORTS['malpe'].get(name_key, 'Malpe')}", callback_data="port_malpe"),
-        ],
-        [
-            InlineKeyboardButton(f"⚓ {SUPPORTED_PORTS['karwar'].get(name_key, 'Karwar')}", callback_data="port_karwar"),
-            InlineKeyboardButton(f"⚓ {SUPPORTED_PORTS['kochi'].get(name_key, 'Kochi')}", callback_data="port_kochi"),
-        ],
+        [InlineKeyboardButton(f"⚓ {SUPPORTED_PORTS['mangalore'].get(name_key, 'Mangalore')}", callback_data="port_mangalore")],
+        [InlineKeyboardButton(f"⚓ {SUPPORTED_PORTS['malpe'].get(name_key, 'Malpe')}", callback_data="port_malpe")],
+        [InlineKeyboardButton(f"⚓ {SUPPORTED_PORTS['karwar'].get(name_key, 'Karwar')}", callback_data="port_karwar")],
+        [InlineKeyboardButton(f"⚓ {SUPPORTED_PORTS['kochi'].get(name_key, 'Kochi')}", callback_data="port_kochi")],
     ]
     return InlineKeyboardMarkup(keyboard)
 
@@ -187,15 +187,6 @@ def get_action_buttons(lang: str = "kn") -> InlineKeyboardMarkup:
     ]
     return InlineKeyboardMarkup(keyboard)
 
-
-def get_bottom_reply_keyboard(lang: str = "kn") -> ReplyKeyboardMarkup:
-    """Persistent bottom keyboard."""
-    t = lambda k: TEXTS.get(k, {}).get(lang, TEXTS.get(k, {}).get("en", k))
-    keyboard = [
-        [KeyboardButton(t("btn_send_gps"), request_location=True)],
-        [KeyboardButton(t("btn_best_spots")), KeyboardButton(t("btn_sea_safety"))],
-    ]
-    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, is_persistent=True)
 
 
 async def query_varidhi_backend(query: str, lat: float = 12.8550, lon: float = 74.8360, port_name: str = "Mangalore") -> dict:
@@ -283,7 +274,6 @@ def build_natural_fisherman_report(port_info: dict, data: dict, lang: str = "kn"
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Entry point: Clean language selection."""
     welcome = (
-        "🙏 <b>Welcome to Varidhi Marine Assistant!</b>\n\n"
         "ದಯವಿಟ್ಟು ನಿಮ್ಮ ಭಾಷೆ ಆಯ್ಕೆಮಾಡಿ:\n"
         "നിങ്ങളുടെ ഭാഷ തിരഞ്ഞെടുക്കുക:\n"
         "अपनी भाषा चुनें:\n"
@@ -312,11 +302,6 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             TEXTS["ask_port"].get(lang, TEXTS["ask_port"]["en"]),
             parse_mode="HTML",
             reply_markup=get_port_picker_buttons(lang),
-        )
-        await query.message.reply_text(
-            TEXTS["live_gps_hint"].get(lang, TEXTS["live_gps_hint"]["en"]),
-            parse_mode="HTML",
-            reply_markup=get_bottom_reply_keyboard(lang),
         )
         return
 
@@ -503,6 +488,7 @@ async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE
     if matched_port:
         context.user_data["current_port"] = matched_port
         await update.message.reply_chat_action("typing")
+        status_msg = await update.message.reply_text("⏳ Processing advisory...")
         try:
             backend_data = await query_varidhi_backend(
                 query=f"Where should I fish near {matched_port['name_en']}?",
@@ -511,14 +497,15 @@ async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE
                 port_name=matched_port["name_en"],
             )
             report = build_natural_fisherman_report(matched_port, backend_data, lang=lang)
-            await update.message.reply_text(report, parse_mode="HTML", reply_markup=get_action_buttons(lang))
+            await status_msg.edit_text(report, parse_mode="HTML", reply_markup=get_action_buttons(lang))
         except Exception as e:
             logger.error("Error: %s", e)
-            await update.message.reply_text("⚠️ Server error.")
+            await status_msg.edit_text("⚠️ Server error.")
         return
 
     current_port = context.user_data.get("current_port", SUPPORTED_PORTS["mangalore"])
     await update.message.reply_chat_action("typing")
+    status_msg = await update.message.reply_text("⏳ Processing advisory...")
     try:
         backend_data = await query_varidhi_backend(
             query=update.message.text.strip(),
@@ -527,10 +514,10 @@ async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE
             port_name=current_port["name_en"],
         )
         report = build_natural_fisherman_report(current_port, backend_data, lang=lang)
-        await update.message.reply_text(report, parse_mode="HTML", reply_markup=get_action_buttons(lang))
+        await status_msg.edit_text(report, parse_mode="HTML", reply_markup=get_action_buttons(lang))
     except Exception as e:
         logger.error("Error: %s", e)
-        await update.message.reply_text("⚠️ Server error.")
+        await status_msg.edit_text("⚠️ Server error.")
 
 
 def main():

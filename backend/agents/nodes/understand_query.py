@@ -440,7 +440,8 @@ def classify_intent(lower_query: str) -> Tuple[str, float]:
     if any(k in lower_query for k in [
         "where should i fish", "where can i fish", "where to fish", "where to catch",
         "fishing recommendation", "good spot to fish", "good spot for fish", "fish catch",
-        "target tuna", "catch sardine", "mackerel catch", "fish shoal", "fishing ground"
+        "target tuna", "catch sardine", "mackerel catch", "fish shoal", "fishing ground",
+        "fishing zone", "fishing zones", "good fishing", "best fishing", "best spot", "best spots"
     ]):
         return MarineIntent.FISHING_RECOMMENDATION.value, 0.95
     if any(k in lower_query for k in ["fish", "fishing", "catch", "tuna", "sardine", "mackerel"]):

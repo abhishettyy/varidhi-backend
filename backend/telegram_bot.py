@@ -612,9 +612,13 @@ async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE
         await update.message.reply_text(farewell, reply_markup=get_action_buttons(lang))
         return
 
-    # 2. Greetings
-    greetings = {"hi", "hello", "hey", "namaste", "namaskara", "namaskar"}
-    if text in greetings:
+    # 2. Greetings (supports typos and slang like hyee, heyyy, hiii, yo, etc.)
+    cleaned_greeting = re.sub(r'(.)\1+', r'\1', text)
+    if (
+        text in {"hi", "hello", "hey", "namaste", "namaskara", "namaskar", "yo", "sup", "hlo", "hai"}
+        or cleaned_greeting in {"hi", "he", "hey", "hye", "hai"}
+        or bool(re.match(r"^(h+[yei]+|hello+|hey+|namast[ea])$", text))
+    ):
         greet_text = {
             "kn": "ನಮಸ್ಕಾರ! 🙏 ನಾನು ನಿಮ್ಮ ವಾರಿಧಿ ಕರಾವಳಿ ಸಹಾಯಕ. ನೀವು ಯಾವ ಬಂದರಿನಿಂದ ಹೊರಡುತ್ತಿದ್ದೀರಿ ಅಥವಾ ಏನು ಮಾಹಿತಿ ತಿಳಿಯಬೇಕು?",
             "ml": "നമസ്കാരം! 🙏 വാരിധി മറൈൻ അസിസ്റ്റന്റിലേക്ക് സ്വാഗതം. ഇന്ന് ഏത് തുറമുഖത്തെ വിവരങ്ങളാണ് അറിയേണ്ടത്?",

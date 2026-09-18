@@ -144,8 +144,12 @@ async def response_generation_node(state: MarineState) -> Dict[str, Any]:
 
     is_fishing_intent = intent_str in (
         MarineIntent.FISHING_RECOMMENDATION.value,
+        MarineIntent.PFZ_SEARCH.value,
         "potential_fishing_zone",
-        "fishing_recommendation"
+        "fishing_recommendation",
+        "pfz_search",
+        "FISHING_RECOMMENDATION",
+        "PFZ_SEARCH",
     )
 
     llm_used = False
@@ -221,18 +225,7 @@ async def response_generation_node(state: MarineState) -> Dict[str, Any]:
     # Deterministic Template Fallback Formatter
     if markdown_content is None:
         if user_role == RoleType.FISHERMAN:
-            lines = [
-                f"### Marine Advisory for {loc_name}",
-                "",
-                f"**Safety Status:** {safety_alert.title}",
-                f"> {safety_alert.action_advice}",
-                "",
-                "#### Sea Conditions:",
-                f"- **Waves:** {wave_height} meters ({'Calm' if wave_height < 1.5 else 'Rough'})",
-                f"- **Wind:** {wind_speed} knots",
-                f"- **Water Temp:** {sst_celsius}°C",
-                "",
-            ]
+            lines = [f"### Marine Advisory for {loc_name}", ""]
 
             if is_fishing_intent and selected_zone:
                 zid = selected_zone.get("zone_id", "ZONE_B")
@@ -242,19 +235,28 @@ async def response_generation_node(state: MarineState) -> Dict[str, Any]:
                 opp = selected_zone.get("opportunity_score", 66.9)
                 risk = selected_zone.get("risk_score", 34.9)
                 rank = selected_zone.get("ranking_score", 67.31)
-
                 risk_label = "LOW" if risk <= 30.0 else ("MODERATE" if risk <= 60.0 else ("HIGH" if risk <= 80.0 else "SEVERE"))
 
                 lines.extend([
-                    f"#### Recommended Fishing Ground: {zid} ({dist} NM {bearing})",
-                    f"- **Coordinates / Bearing:** {bearing} ({dist} NM from harbor)",
+                    f"#### 🐟 Recommended Fishing Ground: {zid} ({dist} NM {bearing})",
+                    f"- **Distance & Bearing:** {bearing} ({dist} NM from harbor)",
                     f"- **Target Species:** {species}",
                     f"- **Fishing Opportunity Score:** {opp:.1f}/100",
-                    f"- **Marine Risk Score:** {risk:.1f}/100 ({risk_label} — favorable relative to evaluated alternatives)",
-                    f"- **Regulatory Clearance:** ELIGIBLE (Confirmed legal zone)",
-                    f"- **Ranking Score:** {rank:.1f}/100 (Top-ranked eligible candidate)",
+                    f"- **Status:** Best Favorable Option (Risk: {risk:.1f}/100 - {risk_label})",
                     "",
                 ])
+
+                lines.extend([
+                    f"**Safety Status:** {safety_alert.title}",
+                    f"> {safety_alert.action_advice}",
+                    "",
+                    "#### Sea Conditions:",
+                    f"- **Waves:** {wave_height} meters ({'Calm' if wave_height < 1.5 else 'Rough'})",
+                    f"- **Wind:** {wind_speed} knots",
+                    f"- **Water Temp:** {sst_celsius}°C",
+                    "",
+                ])
+
                 if rejected_zones:
                     lines.append("#### Decision Breakdown & Other Zones:")
                     for rz in rejected_zones:
@@ -273,7 +275,17 @@ async def response_generation_node(state: MarineState) -> Dict[str, Any]:
                 lines.append("*Notice: This assessment uses synthetic marine demonstration data for the current prototype. It is a deterministic demonstration heuristic and does not constitute official maritime safety certification, port clearance, or statutory navigation advice.*")
                 key_recommendations.append(f"Recommended Fishing Ground: {zid} ({dist} NM {bearing})")
             elif is_fishing_intent and hotspots:
-                lines.append("#### Recommended Fishing Hotspots:")
+                lines.extend([
+                    f"**Safety Status:** {safety_alert.title}",
+                    f"> {safety_alert.action_advice}",
+                    "",
+                    "#### Sea Conditions:",
+                    f"- **Waves:** {wave_height} meters ({'Calm' if wave_height < 1.5 else 'Rough'})",
+                    f"- **Wind:** {wind_speed} knots",
+                    f"- **Water Temp:** {sst_celsius}°C",
+                    "",
+                    "#### Recommended Fishing Hotspots:",
+                ])
                 for hs in hotspots:
                     lines.append(f"- **Zone {hs.get('zone_id', '1')}**: Bearing **{hs.get('bearing')}**, Distance **{hs.get('distance_nm')} NM** ({hs.get('target_depth_m')}m depth).")
                     lines.append(f"  *Expected Fish:* {', '.join(hs.get('likely_species', ['Pelagic species']))}")
@@ -281,8 +293,19 @@ async def response_generation_node(state: MarineState) -> Dict[str, Any]:
                 lines.append("*Notice: This assessment uses synthetic marine demonstration data for the current prototype. It does not constitute official maritime safety certification.*")
                 key_recommendations.append(f"Best fishing ground: {hotspots[0].get('distance_nm')} NM {hotspots[0].get('bearing')}.")
             else:
-                lines.append("*Notice: This assessment uses synthetic marine demonstration data for the current prototype. It does not constitute official maritime safety certification.*")
+                lines.extend([
+                    f"**Safety Status:** {safety_alert.title}",
+                    f"> {safety_alert.action_advice}",
+                    "",
+                    "#### Sea Conditions:",
+                    f"- **Waves:** {wave_height} meters ({'Calm' if wave_height < 1.5 else 'Rough'})",
+                    f"- **Wind:** {wind_speed} knots",
+                    f"- **Water Temp:** {sst_celsius}°C",
+                    "",
+                    "*Notice: This assessment uses synthetic marine demonstration data for the current prototype. It does not constitute official maritime safety certification.*",
+                ])
                 key_recommendations.append(safety_alert.action_advice)
+
 
             markdown_content = "\n".join(lines)
 

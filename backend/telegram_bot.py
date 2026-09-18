@@ -473,12 +473,86 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await status_msg.edit_text("⚠️ Error connecting to server.")
 
 
+def clean_telegram_advisory(text: str, lang: str = "kn") -> str:
+    """Transforms raw backend markdown into a warm, beautiful, emoji-rich Telegram advisory."""
+    # 1. Remove synthetic disclaimer / empty rejection boilerplate
+    text = re.sub(r'###\s*(?:Safety Disclaimer|Zone Rejections|Anti-Overclaiming)[\s\S]*?(?=(?:###|$))', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'\*Notice:[^*]+\*', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'\*Disclaimer:[^*]+\*', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'---\s*', '', text)
+
+    # 2. Escape HTML special characters
+    text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+    # 3. Replace raw ### headers with warm, emoji-rich section titles
+    text = re.sub(r'###\s*Sea Conditions Summary', '🌊 <b>Sea Conditions:</b>', text, flags=re.IGNORECASE)
+    text = re.sub(r'###\s*Recommended Fishing Ground[s]?', '🐟 <b>Fishing Hotspot:</b>', text, flags=re.IGNORECASE)
+    text = re.sub(r'###\s*Actionable Recommendations?', '⚠️ <b>Key Precautions:</b>', text, flags=re.IGNORECASE)
+    text = re.sub(r'###\s*(.*)', r'📌 <b>\1:</b>', text)
+
+    # 4. Replace markdown **bold** with <b>bold</b>
+    text = re.sub(r'\*\*([^*]+)\*\*', r'<b>\1</b>', text)
+
+    # 5. Clean up bullet points and blank lines
+    lines = [line.strip() for line in text.splitlines()]
+    clean_lines = []
+    prev_blank = False
+    for line in lines:
+        if not line:
+            if not prev_blank:
+                clean_lines.append('')
+                prev_blank = True
+        else:
+            if line.startswith('*') or line.startswith('-'):
+                line = '• ' + line.lstrip('*- ').strip()
+            clean_lines.append(line)
+            prev_blank = False
+
+    return '\n'.join(clean_lines).strip()
+
+
 async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handles typed text."""
     text = update.message.text.strip().lower()
     lang = context.user_data.get("lang", "kn")
 
-    # Match port name
+    # 1. Conversational Acknowledgments (e.g. user answering "Do you want to know anything else?" with "no")
+    closing_words = {"no", "nope", "nothing", "all good", "done", "illa", "beda", "nahi", "nahin", "na", "no thanks"}
+    if text in closing_words:
+        farewell = {
+            "kn": "ಸರಿ! ನಿಮ್ಮ ಸಮುದ್ರಯಾನ ಸುರಕ್ಷಿತವಾಗಿರಲಿ. 🌊 ಯಾವುದೇ ಮಾಹಿತಿ ಬೇಕಿದ್ದಾಗ ಇಲ್ಲಿ ಕೇಳಿ. ಶುಭ ದಿನ! ⚓",
+            "ml": "ശരി! സുരക്ഷിതമായ ഒരു യാത്ര ആശംസിക്കുന്നു. 🌊 വിവരങ്ങൾക്ക് എപ്പോൾ വേണമെങ്കിലും ചോദിക്കാം. ⚓",
+            "hi": "ठीक है! आपकी समुद्र यात्रा सुरक्षित रहे. 🌊 कोई भी जानकारी चाहिए तो कभी भी पूछें. शुभ यात्रा! ⚓",
+            "en": "Alright! Wishing you a safe voyage at sea. 🌊 Tap any button below or ask anytime you need updates! ⚓",
+        }.get(lang, "Alright! Safe sailing! 🌊⚓")
+        await update.message.reply_text(farewell, reply_markup=get_action_buttons(lang))
+        return
+
+    # 2. Greetings
+    greetings = {"hi", "hello", "hey", "namaste", "namaskara", "namaskar"}
+    if text in greetings:
+        greet_text = {
+            "kn": "ನಮಸ್ಕಾರ! 🙏 ನಾನು ನಿಮ್ಮ ವಾರಿಧಿ ಕರಾವಳಿ ಸಹಾಯಕ. ನೀವು ಯಾವ ಬಂದರಿನಿಂದ ಹೊರಡುತ್ತಿದ್ದೀರಿ ಅಥವಾ ಏನು ಮಾಹಿತಿ ತಿಳಿಯಬೇಕು?",
+            "ml": "നമസ്കാരം! 🙏 വാരിധി മറൈൻ അസിസ്റ്റന്റിലേക്ക് സ്വാഗതം. ഇന്ന് ഏത് തുറമുഖത്തെ വിവരങ്ങളാണ് അറിയേണ്ടത്?",
+            "hi": "नमस्ते! 🙏 वारिधि मरीन सहायक में आपका स्वागत है. आज आप किस बंदरगाह की जानकारी चाहते हैं?",
+            "en": "Hello! 🙏 Welcome to Varidhi Marine Assistant. Which harbour are you leaving from today, or what would you like to know?",
+        }.get(lang, "Hello! How can I help you today? 🌊")
+        await update.message.reply_text(greet_text, reply_markup=get_action_buttons(lang))
+        return
+
+    # 3. Gratitude
+    gratitude = {"thanks", "thank you", "dhanyavada", "dhanyavadagalu", "dhanyavad", "shukriya", "nandi"}
+    if text in gratitude:
+        grat_text = {
+            "kn": "ಧನ್ಯವಾದಗಳು! 🐟 ನಿಮಗೆ ಉತ್ತಮ ಮೀನು ಬೇಟೆ ಮತ್ತು ಶಾಂತ ಸಮುದ್ರ ಸಿಗಲಿ ಎಂದು ಹಾರೈಸುತ್ತೇನೆ! 🌊",
+            "ml": "വളരെ നന്ദി! 🐟 നല്ലൊരു മീൻപിടുത്തവും ശാന്തമായ കടലും ആശംസിക്കുന്നു! 🌊",
+            "hi": "बहुत धन्यवाद! 🐟 आपको अच्छी मछली और शांत समुद्र मिले! 🌊",
+            "en": "You're very welcome! Wishing you calm waters and a bountiful catch today! 🐟🌊",
+        }.get(lang, "You're very welcome! 🐟🌊")
+        await update.message.reply_text(grat_text, reply_markup=get_action_buttons(lang))
+        return
+
+    # 4. Match port name
     matched_port = None
     for key, p in SUPPORTED_PORTS.items():
         if key in text or p["short"].lower() in text:
@@ -503,6 +577,7 @@ async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE
             await status_msg.edit_text("⚠️ Server error.")
         return
 
+    # 5. General / Custom Query to Gemini Marine AI
     current_port = context.user_data.get("current_port", SUPPORTED_PORTS["mangalore"])
     await update.message.reply_chat_action("typing")
     status_msg = await update.message.reply_text("⏳ Processing advisory with Gemini AI...")
@@ -515,11 +590,13 @@ async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE
         )
         ai_response = backend_data.get("message") or backend_data.get("markdown_content")
         if ai_response and len(ai_response.strip()) > 30:
-            # Direct response from Gemini Marine AI
-            display_text = ai_response.strip()
-            if len(display_text) > 4000:
-                display_text = display_text[:3990] + "\n\n..."
-            await status_msg.edit_text(display_text, reply_markup=get_action_buttons(lang))
+            formatted_text = clean_telegram_advisory(ai_response, lang=lang)
+            if len(formatted_text) > 4000:
+                formatted_text = formatted_text[:3990] + "\n\n..."
+            try:
+                await status_msg.edit_text(formatted_text, parse_mode="HTML", reply_markup=get_action_buttons(lang))
+            except Exception:
+                await status_msg.edit_text(formatted_text, reply_markup=get_action_buttons(lang))
         else:
             report = build_natural_fisherman_report(current_port, backend_data, lang=lang)
             await status_msg.edit_text(report, parse_mode="HTML", reply_markup=get_action_buttons(lang))

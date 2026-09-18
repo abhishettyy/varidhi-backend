@@ -473,27 +473,111 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await status_msg.edit_text("⚠️ Error connecting to server.")
 
 
+ZONE_HUMAN_NAMES = {
+    "ZONE_B": {
+        "en": "Netravati Offshore (Zone B)",
+        "kn": "ನೇತ್ರಾವತಿ ಆಫ್‌ಶೋರ್ (Zone B)",
+        "ml": "നേത്രാവതി ഗ്രൗണ്ട് (Zone B)",
+        "hi": "नेत्रावती ग्राउंड (Zone B)",
+    },
+    "ZONE_A": {
+        "en": "Gurupura Shelf (Zone A)",
+        "kn": "ಗುರುಪುರ ಶೆಲ್ಫ್ (Zone A)",
+        "ml": "ഗുരുപുര ഷെൽഫ് (Zone A)",
+        "hi": "गुरुपुरा शेल्फ (Zone A)",
+    },
+    "ZONE_C": {
+        "en": "Mulki Marine Sanctuary (Zone C)",
+        "kn": "ಮುಲ್ಕಿ ಸಂರಕ್ಷಿತ ವಲಯ (Zone C)",
+        "ml": "മുൽക്കി മറൈൻ സാങ്ച്വറി (Zone C)",
+        "hi": "मुल्की समुद्री अभयारण्य (Zone C)",
+    },
+    "ZONE_D": {
+        "en": "Malpe Outer Bank (Zone D)",
+        "kn": "ಮಲ್ಪೆ ಔಟರ್ ಬ್ಯಾಂಕ್ (Zone D)",
+        "ml": "മാൽപെ ഔട്ടർ ബാങ്ക് (Zone D)",
+        "hi": "मालपे बाहरी तट (Zone D)",
+    },
+    "ZONE_E": {
+        "en": "Kaup Light Shelf (Zone E)",
+        "kn": "ಕಾಪು ಲೈಟ್ ಶೆಲ್ಫ್ (Zone E)",
+        "ml": "കാപ്പ് ഷെൽഫ് (Zone E)",
+        "hi": "कापू लाइट शेल्फ (Zone E)",
+    },
+    "ZONE_F": {
+        "en": "Surathkal Deep Channel (Zone F)",
+        "kn": "ಸುರತ್ಕಲ್ ಡೀಪ್ ಚಾನೆಲ್ (Zone F)",
+        "ml": "സുറത്കൽ ചാനൽ (Zone F)",
+        "hi": "सुरथकल डीप चैनल (Zone F)",
+    },
+    "ZONE_G": {
+        "en": "Uchila Coast Shelf (Zone G)",
+        "kn": "ಉಚ್ಚಿಲ ಕರಾವಳಿ ಶೆಲ್ಫ್ (Zone G)",
+        "ml": "ഉച്ചില ഷെൽഫ് (Zone G)",
+        "hi": "उचिला शेल्फ (Zone G)",
+    },
+    "ZONE_H": {
+        "en": "Someshwara Outer Reef (Zone H)",
+        "kn": "ಸೋಮೇಶ್ವರ ರೀಫ್ (Zone H)",
+        "ml": "സോമേശ്വര റീഫ് (Zone H)",
+        "hi": "सोमेश्वर रीफ (Zone H)",
+    },
+    "ZONE_I": {
+        "en": "Manjeshwar Bank (Zone I)",
+        "kn": "ಮಂಜೇಶ್ವರ ಬ್ಯಾಂಕ್ (Zone I)",
+        "ml": "മഞ്ചേശ്വരം ബാങ്ക് (Zone I)",
+        "hi": "मंजेश्वर तट (Zone I)",
+    },
+    "ZONE_J": {
+        "en": "Kasargod Coastal Reach (Zone J)",
+        "kn": "ಕಾಸರಗೋಡು ತೀರ (Zone J)",
+        "ml": "കാസർഗോഡ് തീരം (Zone J)",
+        "hi": "कासरगोड तट (Zone J)",
+    },
+    "ZONE_K": {
+        "en": "Padubidri Slope (Zone K)",
+        "kn": "ಪಡುಬಿದ್ರಿ ಸ್ಲೋಪ್ (Zone K)",
+        "ml": "പഡുബിദ്രി സ്ലോപ്പ് (Zone K)",
+        "hi": "पदुबिद्री स्लोप (Zone K)",
+    },
+    "ZONE_L": {
+        "en": "Bunder Deep Ridge (Zone L)",
+        "kn": "ಬಂದರು ಡೀಪ್ ರಿಡ್ಜ್ (Zone L)",
+        "ml": "ബന്ദർ റിഡ്ജ് (Zone L)",
+        "hi": "बंदरगाह डीप रिज (Zone L)",
+    },
+}
+
+
 def clean_telegram_advisory(text: str, lang: str = "kn") -> str:
     """Transforms raw backend markdown into a warm, beautiful, emoji-rich Telegram advisory."""
     # 1. Remove synthetic disclaimer / empty rejection boilerplate
     text = re.sub(r'###\s*(?:Safety Disclaimer|Zone Rejections|Anti-Overclaiming)[\s\S]*?(?=(?:###|$))', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'(?:📌\s*)?(?:Advisory & )?Safety Disclaimer[\s\S]*?(?=(?:📌|###|$))', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'•\s*This assessment uses synthetic marine demonstration data[^\n]*', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'•\s*This evaluation is a heuristic risk assessment[^\n]*', '', text, flags=re.IGNORECASE)
     text = re.sub(r'\*Notice:[^*]+\*', '', text, flags=re.IGNORECASE)
     text = re.sub(r'\*Disclaimer:[^*]+\*', '', text, flags=re.IGNORECASE)
     text = re.sub(r'---\s*', '', text)
 
-    # 2. Escape HTML special characters
+    # 2. Map Zone codes (ZONE_A, ZONE_B, etc.) to local human-friendly ground names
+    for zid, names in ZONE_HUMAN_NAMES.items():
+        name = names.get(lang, names["en"])
+        text = re.sub(rf'\b{zid}\b', name, text)
+
+    # 3. Escape HTML special characters
     text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
-    # 3. Replace raw ### headers with warm, emoji-rich section titles
+    # 4. Replace raw ### headers with warm, emoji-rich section titles
     text = re.sub(r'###\s*Sea Conditions Summary', '🌊 <b>Sea Conditions:</b>', text, flags=re.IGNORECASE)
     text = re.sub(r'###\s*Recommended Fishing Ground[s]?', '🐟 <b>Fishing Hotspot:</b>', text, flags=re.IGNORECASE)
     text = re.sub(r'###\s*Actionable Recommendations?', '⚠️ <b>Key Precautions:</b>', text, flags=re.IGNORECASE)
     text = re.sub(r'###\s*(.*)', r'📌 <b>\1:</b>', text)
 
-    # 4. Replace markdown **bold** with <b>bold</b>
+    # 5. Replace markdown **bold** with <b>bold</b>
     text = re.sub(r'\*\*([^*]+)\*\*', r'<b>\1</b>', text)
 
-    # 5. Clean up bullet points and blank lines
+    # 6. Clean up bullet points and blank lines
     lines = [line.strip() for line in text.splitlines()]
     clean_lines = []
     prev_blank = False
@@ -579,8 +663,13 @@ async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     # 5. General / Custom Query to Gemini Marine AI
     current_port = context.user_data.get("current_port", SUPPORTED_PORTS["mangalore"])
-    await update.message.reply_chat_action("typing")
-    status_msg = await update.message.reply_text("⏳ Processing advisory with Gemini AI...")
+    loading_texts = {
+        "kn": "⏳ ಸಮುದ್ರ ಪರಿಸ್ಥಿತಿಗಳನ್ನು ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ...",
+        "ml": "⏳ കടൽ കാലാവസ്ഥ പരിശോധിക്കുന്നു...",
+        "hi": "⏳ समुद्र की स्थिति जांची जा रही है...",
+        "en": "⏳ Checking ocean conditions and preparing your advisory...",
+    }
+    status_msg = await update.message.reply_text(loading_texts.get(lang, "⏳ Processing your query..."))
     try:
         backend_data = await query_varidhi_backend(
             query=update.message.text.strip(),

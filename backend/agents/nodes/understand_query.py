@@ -482,12 +482,10 @@ async def understand_query_node(state: MarineState) -> Dict[str, Any]:
     llm_fallback = False
     llm_fallback_reason: Optional[str] = None
 
-    # Check if LLM extraction should be attempted
+    # Check if LLM extraction should be attempted (use deterministic parser by default for sub-second latency)
     llm = get_llm_provider()
     attempt_llm = False
-    if state.get("use_llm") is True:
-        attempt_llm = True
-    elif llm.provider_name in ("gemini", "openai"):
+    if state.get("use_llm_for_intent") is True:
         attempt_llm = True
     elif isinstance(llm, FakeLLMProvider) and (llm.canned_structured is not None or llm.error_mode is not None):
         attempt_llm = True
